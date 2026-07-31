@@ -1,7 +1,9 @@
 import axios from 'axios';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = 'http://localhost:8082/api';
+// Apunta al puerto 3000 de tu Backend
+const API_URL = 'http://localhost:3000';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -11,7 +13,13 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await SecureStore.getItemAsync('userToken');
+  let token: string | null = null;
+  if (Platform.OS === 'web') {
+    token = localStorage.getItem('userToken');
+  } else {
+    token = await SecureStore.getItemAsync('userToken');
+  }
+
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
