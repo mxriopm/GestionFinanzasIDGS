@@ -35,7 +35,7 @@ export default function RegisterScreen() {
       });
 
       Alert.alert('¡Éxito!', 'Cuenta creada correctamente. Inicia sesión para continuar.', [
-        { text: 'OK', onPress: () => router.replace('/(auth)/login') }
+        { text: 'OK', onPress: () => router.replace('/auth/login') }
       ]);
     } catch (error: any) {
       const msg = error.response?.data?.error || 'Error al crear la cuenta';
@@ -106,7 +106,7 @@ export default function RegisterScreen() {
 
         <View style={styles.footer}>
           <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
-          <Link href="/(auth)/login" asChild>
+          <Link href="/auth/login" asChild>
             <TouchableOpacity>
               <Text style={styles.linkText}>Inicia Sesión</Text>
             </TouchableOpacity>
