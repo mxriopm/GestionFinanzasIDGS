@@ -1,5 +1,6 @@
 // models/usuarioModel.js
 const mongoose = require('mongoose');
+
 const usuarioSchema = new mongoose.Schema({
     nombre: {
         type: String,
@@ -13,19 +14,16 @@ const usuarioSchema = new mongoose.Schema({
     password: {
         type: String,
         required: true,
-       minlength: 6
+        minlength: 6
     },
     edad: {
-        type: Number,
-        required: true
+        type: Number
     },
     sexo: {
-        type: String,
-        required: true
+        type: String
     },
     telefono: {
-        type: Number,
-        required: true
+        type: Number
     }
 });
 
