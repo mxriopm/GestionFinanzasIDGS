@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -7,46 +7,83 @@ import {
   StyleSheet, 
   Alert, 
   ActivityIndicator, 
-  SafeAreaView 
+  SafeAreaView,
+  Animated,
+  Platform
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import api from '../../services/api';
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterScreen() {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
   const router = useRouter();
 
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  const animateButton = () => {
+    Animated.sequence([
+      Animated.timing(scaleAnim, { toValue: 0.95, duration: 100, useNativeDriver: true }),
+      Animated.timing(scaleAnim, { toValue: 1, duration: 100, useNativeDriver: true })
+    ]).start();
+  };
+
   const handleRegister = async () => {
-    if (!nombre || !email || !password) {
-      Alert.alert('Atención', 'Por favor llena todos los campos');
+    animateButton();
+
+    const nombreLimpio = nombre.trim();
+    const correoLimpio = email.trim();
+    const passLimpia = password.trim();
+
+    if (!nombreLimpio || !correoLimpio || !passLimpia) {
+      const msg = 'Por favor llena todos los campos obligatorios';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Atención', msg);
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(correoLimpio)) {
+      const msg = 'Ingresa un formato de correo válido (ej. usuario@dominio.com)';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Correo Inválido', msg);
+      return;
+    }
+
+    if (passLimpia.length < 6) {
+      const msg = 'La contraseña debe tener un mínimo de 6 caracteres';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Contraseña Inválida', msg);
       return;
     }
 
     try {
       setLoading(true);
+
       await api.post('/auth/registro', {
-        nombre,
-        correo: email,
-        password,
+        nombre: nombreLimpio,
+        correo: correoLimpio,
+        password: passLimpia,
       });
 
-      Alert.alert(
-        '¡Éxito!', 
-        'Cuenta creada correctamente. Inicia sesión para continuar.', 
-        [
-          { text: 'OK', onPress: () => router.replace('/auth/login') }
-        ]
-      );
-    } catch (error: any) {
-      const msg = 
-        error.response?.data?.error || 
-        error.response?.data?.message || 
-        'Error al crear la cuenta';
+      setIsSuccess(true);
 
-      Alert.alert('Error al registrar', msg);
+      setTimeout(() => {
+        const msg = 'Cuenta creada correctamente. Procede a iniciar sesión.';
+        if (Platform.OS === 'web') {
+          alert(msg);
+          router.replace('/auth/login');
+        } else {
+          Alert.alert('¡Registro Exitoso!', msg, [
+            { text: 'Ir al Login', onPress: () => router.replace('/auth/login') }
+          ]);
+        }
+      }, 500);
+
+    } catch (error: any) {
+      const msg = error.response?.data?.error || error.response?.data?.message || 'Error al crear la cuenta';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Error de Registro', msg);
     } finally {
       setLoading(false);
     }
@@ -97,18 +134,26 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <TouchableOpacity 
-            style={[styles.button, loading && { opacity: 0.7 }]} 
-            onPress={handleRegister}
-            disabled={loading}
-            activeOpacity={0.85}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Registrarse</Text>
-            )}
-          </TouchableOpacity>
+          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <TouchableOpacity 
+              style={[
+                styles.button, 
+                loading && { opacity: 0.7 },
+                isSuccess && { backgroundColor: '#059669' }
+              ]} 
+              onPress={handleRegister}
+              disabled={loading || isSuccess}
+              activeOpacity={0.85}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : isSuccess ? (
+                <Text style={styles.buttonText}>✓ ¡Registrado!</Text>
+              ) : (
+                <Text style={styles.buttonText}>Registrarse</Text>
+              )}
+            </TouchableOpacity>
+          </Animated.View>
         </View>
 
         <View style={styles.footer}>

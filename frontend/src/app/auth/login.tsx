@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -8,56 +8,88 @@ import {
   Alert, 
   ActivityIndicator, 
   SafeAreaView,
-  Platform 
+  Animated,
+  Platform
 } from 'react-native';
 import { Link } from 'expo-router';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState(false);
   const { login } = useContext(AuthContext);
 
-  const handleLogin = async () => {
-    console.log(' Presionaste Iniciar Sesión');
+  // Valores para animación nativa
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
 
-    if (!email.trim() || !password.trim()) {
+  const triggerAnimation = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0.3,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.sequence([
+        Animated.timing(scaleAnim, {
+          toValue: 0.96,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+        Animated.timing(scaleAnim, {
+          toValue: 1,
+          duration: 150,
+          useNativeDriver: true,
+        }),
+      ])
+    ]).start();
+  };
+
+  const handleLogin = async () => {
+    const correoLimpio = email.trim();
+    const passLimpia = password.trim();
+
+    if (!correoLimpio || !passLimpia) {
       const msg = 'Por favor llena todos los campos';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Atención', msg);
+      return;
+    }
+
+    if (!EMAIL_REGEX.test(correoLimpio)) {
+      const msg = 'Por favor ingresa un correo electrónico válido';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Atención', msg);
       return;
     }
 
     try {
       setLoading(true);
-      console.log(' Enviando credenciales al backend...');
+      triggerAnimation();
 
       const res = await api.post('/auth/login', { 
-        correo: email.trim(), 
-        password: password.trim()
+        correo: correoLimpio, 
+        password: passLimpia
       });
 
-      console.log(' Respuesta del Backend:', res.data);
-
       if (res.data && res.data.token) {
-        // Almacenamos el token e iniciamos sesión directamente
-        await login(res.data.token);
+        setSuccess(true);
+        // Breve pausa para mostrar el indicador de éxito
+        setTimeout(async () => {
+          await login(res.data.token);
+        }, 600);
       } else {
-        const errorMsg = 'No se recibió un token válido del servidor';
+        const errorMsg = 'No se recibió un token válido';
         Platform.OS === 'web' ? alert(errorMsg) : Alert.alert('Error', errorMsg);
+        fadeAnim.setValue(1);
       }
     } catch (error: any) {
-      console.log(' Error en el Login:', error.response?.data || error.message);
-      
-      const msg = 
-        error.response?.data?.message || 
-        error.response?.data?.error || 
-        'No se pudo conectar con el servidor';
-
-      Platform.OS === 'web' 
-        ? alert(`Error de Autenticación: ${msg}`)
-        : Alert.alert('Error de Autenticación', msg);
+      fadeAnim.setValue(1);
+      const msg = error.response?.data?.message || error.response?.data?.error || 'Error al iniciar sesión';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Error de Autenticación', msg);
     } finally {
       setLoading(false);
     }
@@ -65,7 +97,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+      <Animated.View style={[styles.content, { opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
         <View style={styles.header}>
           <Text style={styles.title}>¡Bienvenido!</Text>
           <Text style={styles.subtitle}>Inicia sesión para gestionar tus finanzas</Text>
@@ -98,13 +130,19 @@ export default function LoginScreen() {
           </View>
 
           <TouchableOpacity 
-            style={[styles.button, loading && { opacity: 0.7 }]} 
+            style={[
+              styles.button, 
+              loading && { opacity: 0.8 },
+              success && { backgroundColor: '#059669' }
+            ]} 
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || success}
             activeOpacity={0.85}
           >
             {loading ? (
               <ActivityIndicator color="#fff" />
+            ) : success ? (
+              <Text style={styles.buttonText}>✓ ¡Sesión Iniciada!</Text>
             ) : (
               <Text style={styles.buttonText}>Iniciar Sesión</Text>
             )}
@@ -119,7 +157,7 @@ export default function LoginScreen() {
             </TouchableOpacity>
           </Link>
         </View>
-      </View>
+      </Animated.View>
     </SafeAreaView>
   );
 }
