@@ -27,19 +27,26 @@ export default function RegisterScreen() {
 
     try {
       setLoading(true);
-      // Petición al endpoint real de registro
       await api.post('/auth/registro', {
         nombre,
         correo: email,
         password,
       });
 
-      Alert.alert('¡Éxito!', 'Cuenta creada correctamente. Inicia sesión para continuar.', [
-        { text: 'OK', onPress: () => router.replace('/auth/login') }
-      ]);
+      Alert.alert(
+        '¡Éxito!', 
+        'Cuenta creada correctamente. Inicia sesión para continuar.', 
+        [
+          { text: 'OK', onPress: () => router.replace('/auth/login') }
+        ]
+      );
     } catch (error: any) {
-      const msg = error.response?.data?.error || 'Error al crear la cuenta';
-      Alert.alert('Error', msg);
+      const msg = 
+        error.response?.data?.error || 
+        error.response?.data?.message || 
+        'Error al crear la cuenta';
+
+      Alert.alert('Error al registrar', msg);
     } finally {
       setLoading(false);
     }

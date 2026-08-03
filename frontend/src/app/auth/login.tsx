@@ -7,7 +7,8 @@ import {
   StyleSheet, 
   Alert, 
   ActivityIndicator, 
-  SafeAreaView 
+  SafeAreaView,
+  Platform 
 } from 'react-native';
 import { Link } from 'expo-router';
 import { AuthContext } from '../../context/AuthContext';
@@ -20,25 +21,43 @@ export default function LoginScreen() {
   const { login } = useContext(AuthContext);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Atención', 'Por favor llena todos los campos');
+    console.log(' Presionaste Iniciar Sesión');
+
+    if (!email.trim() || !password.trim()) {
+      const msg = 'Por favor llena todos los campos';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Atención', msg);
       return;
     }
 
     try {
       setLoading(true);
-      // Petición real al backend: usa "correo"
+      console.log(' Enviando credenciales al backend...');
+
       const res = await api.post('/auth/login', { 
-        correo: email, 
-        password 
+        correo: email.trim(), 
+        password: password.trim()
       });
 
-      if (res.data.token) {
+      console.log(' Respuesta del Backend:', res.data);
+
+      if (res.data && res.data.token) {
+        // Almacenamos el token e iniciamos sesión directamente
         await login(res.data.token);
+      } else {
+        const errorMsg = 'No se recibió un token válido del servidor';
+        Platform.OS === 'web' ? alert(errorMsg) : Alert.alert('Error', errorMsg);
       }
     } catch (error: any) {
-      const msg = error.response?.data?.message || 'Error al iniciar sesión';
-      Alert.alert('Error de Autenticación', msg);
+      console.log(' Error en el Login:', error.response?.data || error.message);
+      
+      const msg = 
+        error.response?.data?.message || 
+        error.response?.data?.error || 
+        'No se pudo conectar con el servidor';
+
+      Platform.OS === 'web' 
+        ? alert(`Error de Autenticación: ${msg}`)
+        : Alert.alert('Error de Autenticación', msg);
     } finally {
       setLoading(false);
     }
