@@ -1,109 +1,180 @@
-import React, { useContext } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  TouchableOpacity, 
-  SafeAreaView 
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  RefreshControl,
+  SafeAreaView,
+  Alert,
+  Platform
 } from 'react-native';
-import { AuthContext } from '../../context/AuthContext';
+import api from '../../services/api';
 
-export default function DashboardScreen() {
-  const { logout } = useContext(AuthContext);
+interface Gasto {
+  _id: string;
+  monto: number;
+  categoria: string;
+  descripcion?: string;
+  fecha: string;
+}
 
-  const balanceTotal = 24850.00;
-  const ingresosMes = 32000.00;
-  const gastosMes = 7150.00;
+export default function GastosDashboardScreen() {
+  const [gastos, setGastos] = useState<Gasto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const transaccionesRecientes = [
-    { id: '1', titulo: 'Pago de Nómina', tipo: 'ingreso', monto: 15000, fecha: 'Hoy' },
-    { id: '2', titulo: 'Supermercado', tipo: 'gasto', monto: 1850, fecha: 'Ayer' },
-    { id: '3', titulo: 'Suscripción Netflix', tipo: 'gasto', monto: 299, fecha: '22 Jul' },
-    { id: '4', titulo: 'Proyecto Freelance', tipo: 'ingreso', monto: 5000, fecha: '20 Jul' },
-  ];
+  // 1. Obtener gastos del backend (Filtrados automáticamente por req.usuario.id mediante JWT)
+  const cargarGastos = useCallback(async () => {
+    try {
+      const res = await api.get('/gastos');
+      // Ajusta si tu controlador retorna { gastos: [...] } o un array directo [...]
+      const listaGastos = res.data.gastos || res.data || [];
+      setGastos(listaGastos);
+    } catch (error: any) {
+      console.log('Error al obtener gastos:', error.response?.data || error.message);
+      const msg = error.response?.data?.error || 'No se pudieron cargar los gastos';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    cargarGastos();
+  }, [cargarGastos]);
+
+  // Recargar datos al deslizar hacia abajo
+  const onRefresh = () => {
+    setRefreshing(true);
+    cargarGastos();
+  };
+
+  // Eliminar un gasto
+  const handleEliminarGasto = (id: string, descripcion?: string) => {
+    const confirmar = async () => {
+      try {
+        await api.delete(`/gastos/_id/${id}`);
+        setGastos((prev) => prev.filter((g) => g._id !== id));
+        const msg = 'Gasto eliminado correctamente';
+        Platform.OS === 'web' ? alert(msg) : Alert.alert('Éxito', msg);
+      } catch (error: any) {
+        const msg = error.response?.data?.message || 'Error al eliminar el gasto';
+        Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm(`¿Deseas borrar el gasto "${descripcion || 'Seleccionado'}"?`)) {
+        confirmar();
+      }
+    } else {
+      Alert.alert(
+        'Confirmar eliminación',
+        `¿Eliminar el gasto "${descripcion || 'Seleccionado'}"?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Eliminar', style: 'destructive', onPress: confirmar },
+        ]
+      );
+    }
+  };
+
+  // Calcular el total gastado
+  const totalGastos = gastos.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+
+  // Formatear moneda (MXN)
+  const formatMoneda = (cantidad: number) => {
+    return new Intl.NumberFormat('es-MX', {
+      style: 'currency',
+      currency: 'MXN',
+    }).format(cantidad);
+  };
+
+  // Formatear fecha
+  const formatFecha = (fechaStr: string) => {
+    if (!fechaStr) return '';
+    const d = new Date(fechaStr);
+    return d.toLocaleDateString('es-MX', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    });
+  };
+
+  // Tarjeta individual de gasto
+  const renderGastoCard = ({ item }: { item: Gasto }) => (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.badgeCategoria}>
+          <Text style={styles.textCategoria}>{item.categoria}</Text>
+        </View>
+        <Text style={styles.cardFecha}>{formatFecha(item.fecha)}</Text>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardDescripcion} numberOfLines={2}>
+          {item.descripcion || 'Sin descripción'}
+        </Text>
+        <Text style={styles.cardMonto}>-{formatMoneda(item.monto)}</Text>
+      </View>
+
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => handleEliminarGasto(item._id, item.descripcion)}
+        activeOpacity={0.7}
+      >
+        <Text style={styles.deleteText}>Eliminar</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Hola de nuevo 👋</Text>
-            <Text style={styles.userName}>Panel Financiero</Text>
+      {/* Resumen del Total */}
+      <View style={styles.headerContainer}>
+        <Text style={styles.headerLabel}>Total de Gastos</Text>
+        <Text style={styles.headerTotal}>{formatMoneda(totalGastos)}</Text>
+        <Text style={styles.headerSubtext}>{gastos.length} registro(s) asignado(s) a tu cuenta</Text>
+      </View>
+
+      {/* Lista de Gastos */}
+      <View style={styles.listContainer}>
+        <Text style={styles.sectionTitle}>Historial de Movimientos</Text>
+
+        {loading ? (
+          <View style={styles.centerContainer}>
+            <ActivityIndicator size="large" color="#10b981" />
+            <Text style={styles.loadingText}>Cargando tus datos...</Text>
           </View>
-          <TouchableOpacity onPress={logout} style={styles.logoutBadge}>
-            <Text style={styles.logoutText}>Salir</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.balanceCard}>
-          <Text style={styles.balanceLabel}>BALANCE TOTAL</Text>
-          <Text style={styles.balanceAmount}>
-            ${balanceTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-          </Text>
-          
-          <View style={styles.divider} />
-
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <View style={[styles.statIconBadge, { backgroundColor: 'rgba(16, 185, 129, 0.15)' }]}>
-                <Text style={{ fontSize: 16 }}>↓</Text>
-              </View>
-              <View>
-                <Text style={styles.statLabel}>Ingresos</Text>
-                <Text style={[styles.statAmount, { color: '#34d399' }]}>
-                  +${ingresosMes.toLocaleString('es-MX')}
+        ) : (
+          <FlatList
+            data={gastos}
+            keyExtractor={(item) => item._id}
+            renderItem={renderGastoCard}
+            contentContainerStyle={styles.flatListContent}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                tintColor="#10b981"
+                colors={['#10b981']}
+              />
+            }
+            ListEmptyComponent={
+              <View style={styles.centerContainer}>
+                <Text style={styles.emptyTitle}>Sin gastos registrados</Text>
+                <Text style={styles.emptySubtext}>
+                  Los nuevos gastos que agregues aparecerán automáticamente en esta sección.
                 </Text>
               </View>
-            </View>
-
-            <View style={styles.statBox}>
-              <View style={[styles.statIconBadge, { backgroundColor: 'rgba(239, 68, 68, 0.15)' }]}>
-                <Text style={{ fontSize: 16 }}>↑</Text>
-              </View>
-              <View>
-                <Text style={styles.statLabel}>Gastos</Text>
-                <Text style={[styles.statAmount, { color: '#f87171' }]}>
-                  -${gastosMes.toLocaleString('es-MX')}
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Movimientos Recientes</Text>
-        </View>
-
-        <View style={styles.transactionsList}>
-          {transaccionesRecientes.map((item) => (
-            <View key={item.id} style={styles.transactionCard}>
-              <View style={styles.txLeft}>
-                <View style={[
-                  styles.txIcon, 
-                  { backgroundColor: item.tipo === 'ingreso' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)' }
-                ]}>
-                  <Text style={{ fontSize: 18 }}>
-                    {item.tipo === 'ingreso' ? '💰' : '🛒'}
-                  </Text>
-                </View>
-                <View>
-                  <Text style={styles.txTitle}>{item.titulo}</Text>
-                  <Text style={styles.txDate}>{item.fecha}</Text>
-                </View>
-              </View>
-              <Text style={[
-                styles.txAmount,
-                { color: item.tipo === 'ingreso' ? '#34d399' : '#f87171' }
-              ]}>
-                {item.tipo === 'ingreso' ? '+' : '-'}${item.monto.toLocaleString('es-MX')}
-              </Text>
-            </View>
-          ))}
-        </View>
-
-      </ScrollView>
+            }
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 }
@@ -113,138 +184,124 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#090d16',
   },
-  scrollContent: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  greeting: {
-    fontSize: 13,
-    color: '#64748b',
-    fontWeight: '500',
-  },
-  userName: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#f8fafc',
-  },
-  logoutBadge: {
-    backgroundColor: '#1e293b',
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#334155',
-  },
-  logoutText: {
-    color: '#f87171',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  balanceCard: {
-    backgroundColor: '#111827',
-    borderRadius: 24,
+  headerContainer: {
     padding: 24,
+    backgroundColor: '#111827',
+    marginHorizontal: 16,
+    marginTop: 16,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 8,
-    marginBottom: 28,
   },
-  balanceLabel: {
-    fontSize: 11,
-    fontWeight: '700',
+  headerLabel: {
+    fontSize: 13,
     color: '#94a3b8',
-    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '600',
   },
-  balanceAmount: {
-    fontSize: 36,
+  headerTotal: {
+    fontSize: 34,
     fontWeight: '800',
-    color: '#f8fafc',
-    marginTop: 6,
+    color: '#ef4444',
+    marginVertical: 4,
   },
-  divider: {
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
-    marginVertical: 20,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  statBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  statIconBadge: {
-    width: 38,
-    height: 38,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statLabel: {
+  headerSubtext: {
     fontSize: 12,
     color: '#64748b',
   },
-  statAmount: {
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  sectionHeader: {
-    marginBottom: 16,
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 20,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
     color: '#f8fafc',
+    marginBottom: 12,
   },
-  transactionsList: {
-    gap: 12,
+  flatListContent: {
+    paddingBottom: 24,
   },
-  transactionCard: {
+  card: {
     backgroundColor: '#111827',
-    borderRadius: 18,
+    borderRadius: 16,
     padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
+    marginBottom: 10,
   },
-  txLeft: {
+  badgeCategoria: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  textCategoria: {
+    color: '#10b981',
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'capitalize',
+  },
+  cardFecha: {
+    color: '#64748b',
+    fontSize: 12,
+  },
+  cardBody: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  txIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     alignItems: 'center',
   },
-  txTitle: {
+  cardDescripcion: {
     fontSize: 15,
     fontWeight: '600',
     color: '#f8fafc',
+    flex: 1,
+    marginRight: 12,
   },
-  txDate: {
+  cardMonto: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#f8fafc',
+  },
+  deleteButton: {
+    alignSelf: 'flex-end',
+    marginTop: 10,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  deleteText: {
+    color: '#ef4444',
     fontSize: 12,
-    color: '#64748b',
-    marginTop: 2,
+    fontWeight: '600',
   },
-  txAmount: {
-    fontSize: 15,
+  centerContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    color: '#94a3b8',
+    marginTop: 10,
+    fontSize: 14,
+  },
+  emptyTitle: {
+    color: '#f8fafc',
+    fontSize: 16,
     fontWeight: '700',
+    marginBottom: 6,
+  },
+  emptySubtext: {
+    color: '#64748b',
+    fontSize: 13,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
 });
