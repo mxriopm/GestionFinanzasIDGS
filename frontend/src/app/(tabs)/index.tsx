@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Alert,
   Platform
 } from 'react-native';
+import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
 
 interface Gasto {
@@ -25,12 +26,14 @@ export default function GastosDashboardScreen() {
   const [gastos, setGastos] = useState<Gasto[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  
+  // 🔑 Extraemos 'logout' del AuthContext
+  const { logout } = useContext(AuthContext);
 
-  // 1. Obtener gastos del backend (Filtrados automáticamente por req.usuario.id mediante JWT)
+  // 1. Obtener gastos del backend
   const cargarGastos = useCallback(async () => {
     try {
       const res = await api.get('/gastos');
-      // Ajusta si tu controlador retorna { gastos: [...] } o un array directo [...]
       const listaGastos = res.data.gastos || res.data || [];
       setGastos(listaGastos);
     } catch (error: any) {
@@ -51,6 +54,28 @@ export default function GastosDashboardScreen() {
   const onRefresh = () => {
     setRefreshing(true);
     cargarGastos();
+  };
+
+  // Función para cerrar sesión con confirmación
+  const handleLogout = () => {
+    const salir = async () => {
+      await logout();
+    };
+
+    if (Platform.OS === 'web') {
+      if (confirm('¿Estás seguro de que deseas cerrar sesión?')) {
+        salir();
+      }
+    } else {
+      Alert.alert(
+        'Cerrar Sesión',
+        '¿Estás seguro de que deseas salir de tu cuenta?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Cerrar Sesión', style: 'destructive', onPress: salir }
+        ]
+      );
+    }
   };
 
   // Eliminar un gasto
@@ -134,9 +159,21 @@ export default function GastosDashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Resumen del Total */}
+      {/* Resumen del Total y Botón de Salir */}
       <View style={styles.headerContainer}>
-        <Text style={styles.headerLabel}>Total de Gastos</Text>
+        <View style={styles.topRow}>
+          <Text style={styles.headerLabel}>Total de Gastos</Text>
+          
+          {/* 🔴 Botón de Cerrar Sesión */}
+          <TouchableOpacity 
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
+        </View>
+
         <Text style={styles.headerTotal}>{formatMoneda(totalGastos)}</Text>
         <Text style={styles.headerSubtext}>{gastos.length} registro(s) asignado(s) a tu cuenta</Text>
       </View>
@@ -193,12 +230,30 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.08)',
   },
+  topRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   headerLabel: {
     fontSize: 13,
     color: '#94a3b8',
     textTransform: 'uppercase',
     letterSpacing: 1,
     fontWeight: '600',
+  },
+  logoutButton: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+  },
+  logoutButtonText: {
+    color: '#ef4444',
+    fontSize: 12,
+    fontWeight: '700',
   },
   headerTotal: {
     fontSize: 34,
