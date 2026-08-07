@@ -16,11 +16,11 @@ import {
   ScrollView,
   StatusBar
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
 
-interface Gasto {
+interface Ingreso {
   _id: string;
   monto: number;
   categoria: string;
@@ -28,18 +28,18 @@ interface Gasto {
   fecha: string;
 }
 
-// Categorías rápidas predefinidas con íconos
-const CATEGORIAS_RAPIDAS = [
-  { nombre: 'Comida', icon: 'fast-food-outline', color: '#f59e0b' },
-  { nombre: 'Transporte', icon: 'car-outline', color: '#3b82f6' },
-  { nombre: 'Servicios', icon: 'flash-outline', color: '#eab308' },
-  { nombre: 'Compras', icon: 'cart-outline', color: '#ec4899' },
-  { nombre: 'Entretenimiento', icon: 'game-controller-outline', color: '#8b5cf6' },
-  { nombre: 'Salud', icon: 'medkit-outline', color: '#10b981' },
+// Categorías rápidas para Ingresos
+const CATEGORIAS_INGRESOS = [
+  { nombre: 'Nómina', icon: 'cash-outline', color: '#10b981' },
+  { nombre: 'Ventas', icon: 'cart-outline', color: '#3b82f6' },
+  { nombre: 'Freelance', icon: 'laptop-outline', color: '#8b5cf6' },
+  { nombre: 'Inversiones', icon: 'trending-up-outline', color: '#f59e0b' },
+  { nombre: 'Regalo', icon: 'gift-outline', color: '#ec4899' },
+  { nombre: 'Otros', icon: 'wallet-outline', color: '#06b6d4' },
 ];
 
-export default function GastosDashboardScreen() {
-  const [gastos, setGastos] = useState<Gasto[]>([]);
+export default function IngresosScreen() {
+  const [ingresos, setIngresos] = useState<Ingreso[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
@@ -52,14 +52,14 @@ export default function GastosDashboardScreen() {
 
   const { logout } = useContext(AuthContext);
 
-  const cargarGastos = useCallback(async () => {
+  const cargarIngresos = useCallback(async () => {
     try {
-      const res = await api.get('/gastos');
-      const listaGastos = res.data.gastos || res.data || [];
-      setGastos(listaGastos);
+      const res = await api.get('/ingresos');
+      const listaIngresos = res.data.ingresos || res.data || [];
+      setIngresos(listaIngresos);
     } catch (error: any) {
-      console.log('Error al obtener gastos:', error.response?.data || error.message);
-      const msg = error.response?.data?.error || 'No se pudieron cargar los gastos';
+      console.log('Error al obtener ingresos:', error.response?.data || error.message);
+      const msg = error.response?.data?.error || 'No se pudieron cargar los ingresos';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
     } finally {
       setLoading(false);
@@ -68,15 +68,15 @@ export default function GastosDashboardScreen() {
   }, []);
 
   useEffect(() => {
-    cargarGastos();
-  }, [cargarGastos]);
+    cargarIngresos();
+  }, [cargarIngresos]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    cargarGastos();
+    cargarIngresos();
   };
 
-  const handleCrearGasto = async () => {
+  const handleCrearIngreso = async () => {
     const montoNum = parseFloat(monto);
 
     if (isNaN(montoNum) || montoNum <= 0) {
@@ -93,35 +93,35 @@ export default function GastosDashboardScreen() {
 
     try {
       setSubmitting(true);
-      const res = await api.post('/gastos', {
+      const res = await api.post('/ingresos', {
         monto: montoNum,
         categoria: categoria.trim(),
         descripcion: descripcion.trim() || undefined,
       });
 
-      const nuevoGasto = res.data.gasto || res.data;
-      setGastos((prev) => [nuevoGasto, ...prev]);
+      const nuevoIngreso = res.data.ingreso || res.data;
+      setIngresos((prev) => [nuevoIngreso, ...prev]);
 
       setMonto('');
       setCategoria('');
       setDescripcion('');
       setModalVisible(false);
 
-      const msg = '¡Gasto registrado con éxito!';
+      const msg = '¡Ingreso registrado con éxito!';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Éxito', msg);
     } catch (error: any) {
-      const msg = error.response?.data?.error || error.response?.data?.message || 'Error al guardar el gasto';
+      const msg = error.response?.data?.error || error.response?.data?.message || 'Error al guardar el ingreso';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const handleEliminarGasto = (id: string, desc?: string) => {
+  const handleEliminarIngreso = (id: string, desc?: string) => {
     const borrar = async () => {
       try {
-        await api.delete(`/gastos/_id/${id}`);
-        setGastos((prev) => prev.filter((g) => g._id !== id));
+        await api.delete(`/ingresos/_id/${id}`);
+        setIngresos((prev) => prev.filter((i) => i._id !== id));
       } catch (error: any) {
         const msg = error.response?.data?.message || 'Error al borrar';
         Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
@@ -129,9 +129,9 @@ export default function GastosDashboardScreen() {
     };
 
     if (Platform.OS === 'web') {
-      if (confirm(`¿Eliminar gasto "${desc || 'Seleccionado'}"?`)) borrar();
+      if (confirm(`¿Eliminar ingreso "${desc || 'Seleccionado'}"?`)) borrar();
     } else {
-      Alert.alert('Eliminar Movimiento', `¿Deseas borrar "${desc || 'este gasto'}"?`, [
+      Alert.alert('Eliminar Movimiento', `¿Deseas borrar "${desc || 'este ingreso'}"?`, [
         { text: 'Cancelar', style: 'cancel' },
         { text: 'Eliminar', style: 'destructive', onPress: borrar }
       ]);
@@ -149,7 +149,7 @@ export default function GastosDashboardScreen() {
     }
   };
 
-  const totalGastos = gastos.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+  const totalIngresos = ingresos.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
 
   const formatMoneda = (cant: number) =>
     new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cant);
@@ -162,13 +162,12 @@ export default function GastosDashboardScreen() {
     });
   };
 
-  // Helper para obtener el ícono según la categoría
   const getCategoriaIcon = (catName: string) => {
-    const cat = CATEGORIAS_RAPIDAS.find(c => c.nombre.toLowerCase() === catName.toLowerCase());
-    return cat ? { icon: cat.icon, color: cat.color } : { icon: 'wallet-outline', color: '#10b981' };
+    const cat = CATEGORIAS_INGRESOS.find(c => c.nombre.toLowerCase() === catName.toLowerCase());
+    return cat ? { icon: cat.icon, color: cat.color } : { icon: 'arrow-up-circle-outline', color: '#10b981' };
   };
 
-  const renderGastoCard = ({ item }: { item: Gasto }) => {
+  const renderIngresoCard = ({ item }: { item: Ingreso }) => {
     const { icon, color } = getCategoriaIcon(item.categoria);
 
     return (
@@ -190,10 +189,10 @@ export default function GastosDashboardScreen() {
         </View>
 
         <View style={styles.cardRight}>
-          <Text style={styles.cardMonto}>-{formatMoneda(item.monto)}</Text>
+          <Text style={styles.cardMonto}>+{formatMoneda(item.monto)}</Text>
           <TouchableOpacity
             style={styles.deleteIconButton}
-            onPress={() => handleEliminarGasto(item._id, item.descripcion)}
+            onPress={() => handleEliminarIngreso(item._id, item.descripcion)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="trash-outline" size={16} color="#ef4444" />
@@ -211,11 +210,11 @@ export default function GastosDashboardScreen() {
       <View style={styles.topBar}>
         <View style={styles.userInfo}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={18} color="#10b981" />
+            <Ionicons name="arrow-up-circle" size={20} color="#10b981" />
           </View>
           <View>
-            <Text style={styles.welcomeText}>Mi Billetera</Text>
-            <Text style={styles.statusText}>● En línea</Text>
+            <Text style={styles.welcomeText}>Mis Ingresos</Text>
+            <Text style={styles.statusText}>● Actualizado</Text>
           </View>
         </View>
 
@@ -227,16 +226,16 @@ export default function GastosDashboardScreen() {
       {/* Tarjeta de Saldo Principal */}
       <View style={styles.balanceCard}>
         <View style={styles.balanceHeader}>
-          <Text style={styles.balanceLabel}>Total Gastado</Text>
-          <MaterialCommunityIcons name="trending-down" size={24} color="#ef4444" />
+          <Text style={styles.balanceLabel}>Total Ingresado</Text>
+          <MaterialCommunityIcons name="trending-up" size={24} color="#10b981" />
         </View>
 
-        <Text style={styles.balanceAmount}>{formatMoneda(totalGastos)}</Text>
+        <Text style={styles.balanceAmount}>{formatMoneda(totalIngresos)}</Text>
 
         <View style={styles.balanceFooter}>
           <View style={styles.badgeCount}>
             <Ionicons name="receipt-outline" size={12} color="#10b981" />
-            <Text style={styles.badgeCountText}>{gastos.length} movimientos</Text>
+            <Text style={styles.badgeCountText}>{ingresos.length} entradas</Text>
           </View>
           <Text style={styles.syncText}>Sincronizado</Text>
         </View>
@@ -244,10 +243,7 @@ export default function GastosDashboardScreen() {
 
       {/* Lista de Movimientos */}
       <View style={styles.listContainer}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Historial Reciente</Text>
-          <Feather name="sliders" size={16} color="#64748b" />
-        </View>
+        <Text style={styles.sectionTitle}>Historial de Ingresos</Text>
 
         {loading ? (
           <View style={styles.centerContainer}>
@@ -255,9 +251,9 @@ export default function GastosDashboardScreen() {
           </View>
         ) : (
           <FlatList
-            data={gastos}
+            data={ingresos}
             keyExtractor={(item) => item._id}
-            renderItem={renderGastoCard}
+            renderItem={renderIngresoCard}
             contentContainerStyle={styles.flatListContent}
             showsVerticalScrollIndicator={false}
             refreshControl={
@@ -266,8 +262,8 @@ export default function GastosDashboardScreen() {
             ListEmptyComponent={
               <View style={styles.centerContainer}>
                 <Ionicons name="wallet-outline" size={48} color="#1e293b" />
-                <Text style={styles.emptyTitle}>Sin gastos aún</Text>
-                <Text style={styles.emptySubtext}>Toca el botón flotante para agregar tu primer movimiento.</Text>
+                <Text style={styles.emptyTitle}>Sin ingresos registrados</Text>
+                <Text style={styles.emptySubtext}>Agrega entradas de dinero presionando el botón (+).</Text>
               </View>
             }
           />
@@ -283,7 +279,7 @@ export default function GastosDashboardScreen() {
         <Ionicons name="add" size={32} color="#ffffff" />
       </TouchableOpacity>
 
-      {/* Modal Moderno */}
+      {/* Modal de Registro */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -298,7 +294,7 @@ export default function GastosDashboardScreen() {
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
                 <Ionicons name="add-circle-outline" size={24} color="#10b981" />
-                <Text style={styles.modalTitle}> Registrar Gasto</Text>
+                <Text style={styles.modalTitle}> Registrar Ingreso</Text>
               </View>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
                 <Ionicons name="close" size={20} color="#94a3b8" />
@@ -306,7 +302,6 @@ export default function GastosDashboardScreen() {
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Campo Monto */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Monto</Text>
                 <View style={styles.inputWithIcon}>
@@ -322,11 +317,10 @@ export default function GastosDashboardScreen() {
                 </View>
               </View>
 
-              {/* Selector Rápido de Categorías */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Categorías Rápidas</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRow}>
-                  {CATEGORIAS_RAPIDAS.map((cat) => {
+                  {CATEGORIAS_INGRESOS.map((cat) => {
                     const isSelected = categoria.toLowerCase() === cat.nombre.toLowerCase();
                     return (
                       <TouchableOpacity
@@ -347,11 +341,10 @@ export default function GastosDashboardScreen() {
                 </ScrollView>
               </View>
 
-              {/* Entrada de Categoría Personalizada */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>O escribe otra categoría</Text>
                 <TextInput
-                  placeholder="Ej. Suscripciones, Regalos"
+                  placeholder="Ej. Bonos, Reembolsos"
                   placeholderTextColor="#475569"
                   value={categoria}
                   onChangeText={setCategoria}
@@ -359,7 +352,6 @@ export default function GastosDashboardScreen() {
                 />
               </View>
 
-              {/* Descripción */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Nota / Descripción</Text>
                 <TextInput
@@ -372,10 +364,9 @@ export default function GastosDashboardScreen() {
                 />
               </View>
 
-              {/* Botón Guardar */}
               <TouchableOpacity
                 style={[styles.submitButton, submitting && { opacity: 0.7 }]}
-                onPress={handleCrearGasto}
+                onPress={handleCrearIngreso}
                 disabled={submitting}
                 activeOpacity={0.85}
               >
@@ -384,7 +375,7 @@ export default function GastosDashboardScreen() {
                 ) : (
                   <>
                     <Ionicons name="checkmark-circle-outline" size={20} color="#fff" style={{ marginRight: 6 }} />
-                    <Text style={styles.submitButtonText}>Guardar Movimiento</Text>
+                    <Text style={styles.submitButtonText}>Guardar Ingreso</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -441,7 +432,7 @@ const styles = StyleSheet.create({
   },
   balanceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   balanceLabel: { color: '#94a3b8', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  balanceAmount: { color: '#f8fafc', fontSize: 36, fontWeight: '900', marginVertical: 8, letterSpacing: -0.5 },
+  balanceAmount: { color: '#10b981', fontSize: 36, fontWeight: '900', marginVertical: 8, letterSpacing: -0.5 },
   balanceFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   badgeCount: {
     flexDirection: 'row',
@@ -454,8 +445,7 @@ const styles = StyleSheet.create({
   badgeCountText: { color: '#10b981', fontSize: 11, fontWeight: '700', marginLeft: 4 },
   syncText: { color: '#475569', fontSize: 11 },
   listContainer: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
-  sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { color: '#f8fafc', fontSize: 17, fontWeight: '700' },
+  sectionTitle: { color: '#f8fafc', fontSize: 17, fontWeight: '700', marginBottom: 14 },
   flatListContent: { paddingBottom: 90 },
   card: {
     backgroundColor: '#131b2e',
@@ -484,7 +474,7 @@ const styles = StyleSheet.create({
   dot: { color: '#475569', marginHorizontal: 6, fontSize: 10 },
   cardFecha: { color: '#64748b', fontSize: 11 },
   cardRight: { alignItems: 'flex-end', justifyContent: 'center' },
-  cardMonto: { color: '#ef4444', fontSize: 16, fontWeight: '800' },
+  cardMonto: { color: '#10b981', fontSize: 16, fontWeight: '800' },
   deleteIconButton: { marginTop: 6, padding: 2 },
   centerContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 50 },
   emptyTitle: { color: '#94a3b8', fontSize: 16, fontWeight: '700', marginTop: 12 },
