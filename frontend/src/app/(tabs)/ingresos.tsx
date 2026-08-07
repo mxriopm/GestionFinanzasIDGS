@@ -23,7 +23,8 @@ import api from '../../services/api';
 interface Ingreso {
   _id: string;
   monto: number;
-  categoria: string;
+  categoria?: string;
+  concepto?: string;
   descripcion?: string;
   fecha: string;
 }
@@ -93,11 +94,20 @@ export default function IngresosScreen() {
 
     try {
       setSubmitting(true);
-      const res = await api.post('/ingresos', {
+
+      const fechaActual = new Date();
+
+      // Payload compatible con el modelo Mongoose
+      const payload = {
         monto: montoNum,
         categoria: categoria.trim(),
         descripcion: descripcion.trim() || undefined,
-      });
+        concepto: descripcion.trim() || categoria.trim(),
+        mes: fechaActual.getMonth() + 1, // Número del 1 al 12
+        año: fechaActual.getFullYear()
+      };
+
+      const res = await api.post('/ingresos', payload);
 
       const nuevoIngreso = res.data.ingreso || res.data;
       setIngresos((prev) => [nuevoIngreso, ...prev]);
@@ -162,13 +172,16 @@ export default function IngresosScreen() {
     });
   };
 
-  const getCategoriaIcon = (catName: string) => {
+  // Función protegida contra valores undefined o null
+  const getCategoriaIcon = (catName?: string) => {
+    if (!catName) return { icon: 'arrow-up-circle-outline', color: '#10b981' };
     const cat = CATEGORIAS_INGRESOS.find(c => c.nombre.toLowerCase() === catName.toLowerCase());
     return cat ? { icon: cat.icon, color: cat.color } : { icon: 'arrow-up-circle-outline', color: '#10b981' };
   };
 
   const renderIngresoCard = ({ item }: { item: Ingreso }) => {
-    const { icon, color } = getCategoriaIcon(item.categoria);
+    const nombreCategoria = item.categoria || item.concepto || 'General';
+    const { icon, color } = getCategoriaIcon(nombreCategoria);
 
     return (
       <View style={styles.card}>
@@ -178,10 +191,10 @@ export default function IngresosScreen() {
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.cardDescripcion} numberOfLines={1}>
-              {item.descripcion || item.categoria}
+              {item.descripcion || item.concepto || nombreCategoria}
             </Text>
             <View style={styles.cardMeta}>
-              <Text style={styles.cardCategoriaBadge}>{item.categoria}</Text>
+              <Text style={styles.cardCategoriaBadge}>{nombreCategoria}</Text>
               <Text style={styles.dot}>•</Text>
               <Text style={styles.cardFecha}>{formatFecha(item.fecha)}</Text>
             </View>
@@ -192,7 +205,7 @@ export default function IngresosScreen() {
           <Text style={styles.cardMonto}>+{formatMoneda(item.monto)}</Text>
           <TouchableOpacity
             style={styles.deleteIconButton}
-            onPress={() => handleEliminarIngreso(item._id, item.descripcion)}
+            onPress={() => handleEliminarIngreso(item._id, item.descripcion || item.concepto)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="trash-outline" size={16} color="#ef4444" />
