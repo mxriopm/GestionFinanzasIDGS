@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useContext } from 'react';
+import React, { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import {
   View,
   Text,
@@ -14,9 +14,10 @@ import {
   TextInput,
   KeyboardAvoidingView,
   ScrollView,
-  StatusBar
+  StatusBar,
+  Animated
 } from 'react-native';
-import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { Ionicons, Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { AuthContext } from '../../context/AuthContext';
 import api from '../../services/api';
 
@@ -28,7 +29,6 @@ interface Gasto {
   fecha: string;
 }
 
-// Categorías rápidas predefinidas con íconos
 const CATEGORIAS_RAPIDAS = [
   { nombre: 'Comida', icon: 'fast-food-outline', color: '#f59e0b' },
   { nombre: 'Transporte', icon: 'car-outline', color: '#3b82f6' },
@@ -43,7 +43,6 @@ export default function GastosDashboardScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
-  // Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState('');
@@ -52,13 +51,22 @@ export default function GastosDashboardScreen() {
 
   const { logout } = useContext(AuthContext);
 
+  // Valor animado para el botón flotante
+  const fabScale = useRef(new Animated.Value(1)).current;
+
+  const animateFab = () => {
+    Animated.sequence([
+      Animated.timing(fabScale, { toValue: 0.88, duration: 100, useNativeDriver: true }),
+      Animated.timing(fabScale, { toValue: 1, duration: 100, useNativeDriver: true })
+    ]).start();
+  };
+
   const cargarGastos = useCallback(async () => {
     try {
       const res = await api.get('/gastos');
       const listaGastos = res.data.gastos || res.data || [];
       setGastos(listaGastos);
     } catch (error: any) {
-      console.log('Error al obtener gastos:', error.response?.data || error.message);
       const msg = error.response?.data?.error || 'No se pudieron cargar los gastos';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
     } finally {
@@ -107,7 +115,7 @@ export default function GastosDashboardScreen() {
       setDescripcion('');
       setModalVisible(false);
 
-      const msg = '¡Gasto registrado con éxito!';
+      const msg = 'Gasto registrado correctamente';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Éxito', msg);
     } catch (error: any) {
       const msg = error.response?.data?.error || error.response?.data?.message || 'Error al guardar el gasto';
@@ -162,7 +170,6 @@ export default function GastosDashboardScreen() {
     });
   };
 
-  // Helper para obtener el ícono según la categoría
   const getCategoriaIcon = (catName: string) => {
     const cat = CATEGORIAS_RAPIDAS.find(c => c.nombre.toLowerCase() === catName.toLowerCase());
     return cat ? { icon: cat.icon, color: cat.color } : { icon: 'wallet-outline', color: '#10b981' };
@@ -196,7 +203,7 @@ export default function GastosDashboardScreen() {
             onPress={() => handleEliminarGasto(item._id, item.descripcion)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons name="trash-outline" size={16} color="#ef4444" />
+            <Feather name="trash-2" size={16} color="#ef4444" />
           </TouchableOpacity>
         </View>
       </View>
@@ -207,46 +214,49 @@ export default function GastosDashboardScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0a0f1d" />
 
-      {/* Top Bar / Header */}
+      {/* Header */}
       <View style={styles.topBar}>
         <View style={styles.userInfo}>
           <View style={styles.avatar}>
-            <Ionicons name="person" size={18} color="#10b981" />
+            <Ionicons name="card" size={18} color="#ef4444" />
           </View>
           <View>
-            <Text style={styles.welcomeText}>Mi Billetera</Text>
-            <Text style={styles.statusText}>● En línea</Text>
+            <Text style={styles.welcomeText}>Gestión de Gastos</Text>
+            <View style={styles.statusIndicator}>
+              <View style={styles.onlineDot} />
+              <Text style={styles.statusText}>Sesión Activa</Text>
+            </View>
           </View>
         </View>
 
         <TouchableOpacity style={styles.iconLogout} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+          <Feather name="power" size={18} color="#ef4444" />
         </TouchableOpacity>
       </View>
 
-      {/* Tarjeta de Saldo Principal */}
+      {/* Balance Card */}
       <View style={styles.balanceCard}>
         <View style={styles.balanceHeader}>
           <Text style={styles.balanceLabel}>Total Gastado</Text>
-          <MaterialCommunityIcons name="trending-down" size={24} color="#ef4444" />
+          <MaterialCommunityIcons name="arrow-bottom-left-bold-box-outline" size={24} color="#ef4444" />
         </View>
 
         <Text style={styles.balanceAmount}>{formatMoneda(totalGastos)}</Text>
 
         <View style={styles.balanceFooter}>
           <View style={styles.badgeCount}>
-            <Ionicons name="receipt-outline" size={12} color="#10b981" />
-            <Text style={styles.badgeCountText}>{gastos.length} movimientos</Text>
+            <Feather name="list" size={12} color="#10b981" />
+            <Text style={styles.badgeCountText}>{gastos.length} registros</Text>
           </View>
-          <Text style={styles.syncText}>Sincronizado</Text>
+          <Text style={styles.syncText}>Filtro por JWT</Text>
         </View>
       </View>
 
-      {/* Lista de Movimientos */}
+      {/* Historial */}
       <View style={styles.listContainer}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Historial Reciente</Text>
-          <Feather name="sliders" size={16} color="#64748b" />
+          <Text style={styles.sectionTitle}>Movimientos Recientes</Text>
+          <Feather name="clock" size={16} color="#64748b" />
         </View>
 
         {loading ? (
@@ -265,25 +275,30 @@ export default function GastosDashboardScreen() {
             }
             ListEmptyComponent={
               <View style={styles.centerContainer}>
-                <Ionicons name="wallet-outline" size={48} color="#1e293b" />
-                <Text style={styles.emptyTitle}>Sin gastos aún</Text>
-                <Text style={styles.emptySubtext}>Toca el botón flotante para agregar tu primer movimiento.</Text>
+                <Feather name="inbox" size={48} color="#1e293b" />
+                <Text style={styles.emptyTitle}>Sin registros aún</Text>
+                <Text style={styles.emptySubtext}>Presiona el botón (+) para añadir un nuevo movimiento.</Text>
               </View>
             }
           />
         )}
       </View>
 
-      {/* Botón Flotante (FAB) */}
-      <TouchableOpacity
-        style={styles.fabButton}
-        onPress={() => setModalVisible(true)}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={32} color="#ffffff" />
-      </TouchableOpacity>
+      {/* Botón Flotante Animado (FAB) */}
+      <Animated.View style={[styles.fabContainer, { transform: [{ scale: fabScale }] }]}>
+        <TouchableOpacity
+          style={styles.fabButton}
+          onPress={() => {
+            animateFab();
+            setModalVisible(true);
+          }}
+          activeOpacity={0.9}
+        >
+          <Feather name="plus" size={28} color="#ffffff" />
+        </TouchableOpacity>
+      </Animated.View>
 
-      {/* Modal Moderno */}
+      {/* Modal Modal con Íconos Vectoriales */}
       <Modal
         visible={modalVisible}
         animationType="slide"
@@ -297,18 +312,17 @@ export default function GastosDashboardScreen() {
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <View style={styles.modalTitleRow}>
-                <Ionicons name="add-circle-outline" size={24} color="#10b981" />
+                <Feather name="plus-circle" size={22} color="#10b981" />
                 <Text style={styles.modalTitle}> Registrar Gasto</Text>
               </View>
               <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-                <Ionicons name="close" size={20} color="#94a3b8" />
+                <Feather name="x" size={18} color="#94a3b8" />
               </TouchableOpacity>
             </View>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Campo Monto */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Monto</Text>
+                <Text style={styles.label}>Monto ($ MXN)</Text>
                 <View style={styles.inputWithIcon}>
                   <Text style={styles.currencySymbol}>$</Text>
                   <TextInput
@@ -322,7 +336,6 @@ export default function GastosDashboardScreen() {
                 </View>
               </View>
 
-              {/* Selector Rápido de Categorías */}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Categorías Rápidas</Text>
                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRow}>
@@ -347,9 +360,8 @@ export default function GastosDashboardScreen() {
                 </ScrollView>
               </View>
 
-              {/* Entrada de Categoría Personalizada */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>O escribe otra categoría</Text>
+                <Text style={styles.label}>O Escribe una Categoría</Text>
                 <TextInput
                   placeholder="Ej. Suscripciones, Regalos"
                   placeholderTextColor="#475569"
@@ -359,11 +371,10 @@ export default function GastosDashboardScreen() {
                 />
               </View>
 
-              {/* Descripción */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Nota / Descripción</Text>
+                <Text style={styles.label}>Descripción (Opcional)</Text>
                 <TextInput
-                  placeholder="Detalle opcional..."
+                  placeholder="Nota o detalle del movimiento..."
                   placeholderTextColor="#475569"
                   value={descripcion}
                   onChangeText={setDescripcion}
@@ -372,7 +383,6 @@ export default function GastosDashboardScreen() {
                 />
               </View>
 
-              {/* Botón Guardar */}
               <TouchableOpacity
                 style={[styles.submitButton, submitting && { opacity: 0.7 }]}
                 onPress={handleCrearGasto}
@@ -383,8 +393,8 @@ export default function GastosDashboardScreen() {
                   <ActivityIndicator color="#fff" />
                 ) : (
                   <>
-                    <Ionicons name="checkmark-circle-outline" size={20} color="#fff" style={{ marginRight: 6 }} />
-                    <Text style={styles.submitButtonText}>Guardar Movimiento</Text>
+                    <Feather name="check" size={20} color="#fff" style={{ marginRight: 6 }} />
+                    <Text style={styles.submitButtonText}>Guardar Gasto</Text>
                   </>
                 )}
               </TouchableOpacity>
@@ -410,16 +420,18 @@ const styles = StyleSheet.create({
   avatar: {
     width: 38,
     height: 38,
-    borderRadius: 19,
-    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    borderRadius: 12,
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderColor: 'rgba(239, 68, 68, 0.3)',
   },
   welcomeText: { color: '#f8fafc', fontSize: 16, fontWeight: '700' },
-  statusText: { color: '#10b981', fontSize: 11, fontWeight: '500' },
+  statusIndicator: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  onlineDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#10b981', marginRight: 6 },
+  statusText: { color: '#94a3b8', fontSize: 11, fontWeight: '500' },
   iconLogout: {
     width: 36,
     height: 36,
@@ -440,8 +452,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.06)',
   },
   balanceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  balanceLabel: { color: '#94a3b8', fontSize: 13, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  balanceAmount: { color: '#f8fafc', fontSize: 36, fontWeight: '900', marginVertical: 8, letterSpacing: -0.5 },
+  balanceLabel: { color: '#94a3b8', fontSize: 12, fontWeight: '700', textTransform: 'uppercase', letterSpacing: 0.5 },
+  balanceAmount: { color: '#ef4444', fontSize: 36, fontWeight: '900', marginVertical: 8, letterSpacing: -0.5 },
   balanceFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   badgeCount: {
     flexDirection: 'row',
@@ -455,7 +467,7 @@ const styles = StyleSheet.create({
   syncText: { color: '#475569', fontSize: 11 },
   listContainer: { flex: 1, paddingHorizontal: 20, paddingTop: 20 },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 },
-  sectionTitle: { color: '#f8fafc', fontSize: 17, fontWeight: '700' },
+  sectionTitle: { color: '#f8fafc', fontSize: 16, fontWeight: '700' },
   flatListContent: { paddingBottom: 90 },
   card: {
     backgroundColor: '#131b2e',
@@ -489,10 +501,8 @@ const styles = StyleSheet.create({
   centerContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 50 },
   emptyTitle: { color: '#94a3b8', fontSize: 16, fontWeight: '700', marginTop: 12 },
   emptySubtext: { color: '#475569', fontSize: 13, textAlign: 'center', marginTop: 4, paddingHorizontal: 20 },
+  fabContainer: { position: 'absolute', bottom: 24, right: 24 },
   fabButton: {
-    position: 'absolute',
-    bottom: 24,
-    right: 24,
     backgroundColor: '#10b981',
     width: 60,
     height: 60,

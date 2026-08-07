@@ -1,9 +1,8 @@
 import React, { useContext, useEffect } from 'react';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Slot, useRouter, useSegments } from 'expo-router';
 import { AuthProvider, AuthContext } from '../context/AuthContext';
-import '../global.css';
 
-function NavigationWrapper() {
+function RootLayoutNav() {
   const { token, isLoading } = useContext(AuthContext);
   const segments = useSegments();
   const router = useRouter();
@@ -11,7 +10,6 @@ function NavigationWrapper() {
   useEffect(() => {
     if (isLoading) return;
 
-    // Detecta si la pantalla actual pertenece a "auth"
     const inAuthGroup = segments[0] === 'auth';
 
     if (!token && !inAuthGroup) {
@@ -21,19 +19,13 @@ function NavigationWrapper() {
     }
   }, [token, isLoading, segments]);
 
-  return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="auth" />
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="index" />
-    </Stack>
-  );
+  return <Slot />;
 }
 
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <NavigationWrapper />
+      <RootLayoutNav />
     </AuthProvider>
   );
 }

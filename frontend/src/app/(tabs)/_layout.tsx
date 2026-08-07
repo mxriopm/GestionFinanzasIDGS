@@ -1,46 +1,47 @@
 import { Tabs } from 'expo-router';
-import { Text, StyleSheet } from 'react-native';
+import { Feather } from '@expo/vector-icons';
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: {
+          backgroundColor: '#0a0f1d',
+          borderTopColor: '#1e293b',
+          height: 65,
+          paddingBottom: 10,
+          paddingTop: 8,
+        },
         tabBarActiveTintColor: '#10b981',
         tabBarInactiveTintColor: '#64748b',
-        tabBarLabelStyle: styles.tabLabel,
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Inicio',
-          tabBarIcon: () => <Text style={{ fontSize: 20 }}>📊</Text>,
+          title: 'Gastos',
+          tabBarIcon: ({ color, size }) => <Feather name="minus-circle" size={size} color={color} />,
         }}
       />
       <Tabs.Screen
-        name="movimientos"
+        name="ingresos"
         options={{
-          title: 'Movimientos',
-          tabBarIcon: () => <Text style={{ fontSize: 20 }}>💳</Text>,
+          title: 'Ingresos',
+          tabBarIcon: ({ color, size }) => <Feather name="plus-circle" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="resumen"
+        options={{
+          title: 'Resumen',
+          tabBarIcon: ({ color, size }) => <Feather name="pie-chart" size={size} color={color} />,
         }}
       />
     </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  tabBar: {
-    backgroundColor: '#111827',
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.08)',
-    height: 65,
-    paddingBottom: 10,
-    paddingTop: 8,
-  },
-  tabLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
-});

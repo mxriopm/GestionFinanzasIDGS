@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useState, ReactNode } from 'react';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
@@ -11,20 +11,13 @@ interface AuthContextProps {
 
 export const AuthContext = createContext<AuthContextProps>({} as AuthContextProps);
 
-// Helpers para compatibilidad Web / Nativo
+// Helpers para almacenamiento
 const setStorageItem = async (key: string, value: string) => {
   if (Platform.OS === 'web') {
     localStorage.setItem(key, value);
   } else {
     await SecureStore.setItemAsync(key, value);
   }
-};
-
-const getStorageItem = async (key: string) => {
-  if (Platform.OS === 'web') {
-    return localStorage.getItem(key);
-  }
-  return await SecureStore.getItemAsync(key);
 };
 
 const removeStorageItem = async (key: string) => {
@@ -36,22 +29,9 @@ const removeStorageItem = async (key: string) => {
 };
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  // Inicia explícitamente en null para forzar el Login cada vez que arranca la app
   const [token, setToken] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    const loadToken = async () => {
-      try {
-        const storedToken = await getStorageItem('userToken');
-        if (storedToken) setToken(storedToken);
-      } catch (e) {
-        console.error('Error al recuperar token:', e);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadToken();
-  }, []);
+  const [isLoading] = useState(false);
 
   const login = async (newToken: string) => {
     await setStorageItem('userToken', newToken);
