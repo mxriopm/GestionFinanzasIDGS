@@ -148,17 +148,18 @@ export default function IngresosScreen() {
     }
   };
 
-  const handleLogout = () => {
+const handleLogout = async () => {
     if (Platform.OS === 'web') {
-      if (confirm('¿Deseas cerrar sesión?')) logout();
+      if (window.confirm('¿Deseas cerrar sesión?')) {
+        await logout();
+      }
     } else {
       Alert.alert('Cerrar Sesión', '¿Deseas salir de tu cuenta?', [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Salir', style: 'destructive', onPress: () => logout() }
+        { text: 'Salir', style: 'destructive', onPress: async () => await logout() }
       ]);
     }
   };
-
   const totalIngresos = ingresos.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
 
   const formatMoneda = (cant: number) =>
@@ -227,7 +228,7 @@ export default function IngresosScreen() {
           </View>
           <View>
             <Text style={styles.welcomeText}>Mis Ingresos</Text>
-            <Text style={styles.statusText}>● Actualizado</Text>
+            <Text style={styles.statusText}></Text>
           </View>
         </View>
 
