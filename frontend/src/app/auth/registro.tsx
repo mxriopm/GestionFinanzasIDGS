@@ -9,10 +9,13 @@ import {
   ActivityIndicator, 
   SafeAreaView,
   Animated,
-  Platform
+  Platform,
+  KeyboardAvoidingView,
+  ScrollView
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import api from '../../services/api';
+import { COLORS, globalStyles } from '../../constants/theme';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -90,160 +93,118 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Crear Cuenta</Text>
-          <Text style={styles.subtitle}>Empieza a registrar y controlar tus gastos</Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nombre Completo</Text>
-            <TextInput
-              placeholder="Juan Pérez"
-              placeholderTextColor="#64748b"
-              value={nombre}
-              onChangeText={setNombre}
-              style={styles.input}
-            />
+    <SafeAreaView style={globalStyles.container}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={styles.keyboardView}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={globalStyles.titleGold}>Crear Cuenta</Text>
+            <Text style={globalStyles.label}>Gestión Patrimonial Exclusiva</Text>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Correo Electrónico</Text>
-            <TextInput
-              placeholder="tu@correo.com"
-              placeholderTextColor="#64748b"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-            />
+          {/* Tarjeta Glassmorphism */}
+          <View style={globalStyles.cardGlass}>
+            <View style={styles.inputGroup}>
+              <Text style={globalStyles.label}>Nombre Completo</Text>
+              <TextInput
+                placeholder="Juan Pérez"
+                placeholderTextColor={COLORS.textMuted}
+                value={nombre}
+                onChangeText={setNombre}
+                style={globalStyles.inputGlass}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={globalStyles.label}>Correo Electrónico</Text>
+              <TextInput
+                placeholder="tu@correo.com"
+                placeholderTextColor={COLORS.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={globalStyles.inputGlass}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={globalStyles.label}>Contraseña</Text>
+              <TextInput
+                placeholder="Mínimo 6 caracteres"
+                placeholderTextColor={COLORS.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                style={globalStyles.inputGlass}
+              />
+            </View>
+
+            <Animated.View style={{ transform: [{ scale: scaleAnim }], marginTop: 10 }}>
+              <TouchableOpacity 
+                style={[
+                  globalStyles.btnGold, 
+                  loading && { opacity: 0.7 },
+                  isSuccess && { backgroundColor: COLORS.success }
+                ]} 
+                onPress={handleRegister}
+                disabled={loading || isSuccess}
+                activeOpacity={0.85}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#05070e" />
+                ) : isSuccess ? (
+                  <Text style={[globalStyles.btnGoldText, { color: '#ffffff' }]}>✓ ¡Registrado!</Text>
+                ) : (
+                  <Text style={globalStyles.btnGoldText}>REGISTRARSE</Text>
+                )}
+              </TouchableOpacity>
+            </Animated.View>
           </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contraseña</Text>
-            <TextInput
-              placeholder="Mínimo 6 caracteres"
-              placeholderTextColor="#64748b"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              style={styles.input}
-            />
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
+            <Link href="/auth/login" asChild>
+              <TouchableOpacity>
+                <Text style={styles.linkText}>Inicia Sesión</Text>
+              </TouchableOpacity>
+            </Link>
           </View>
-
-          <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
-            <TouchableOpacity 
-              style={[
-                styles.button, 
-                loading && { opacity: 0.7 },
-                isSuccess && { backgroundColor: '#059669' }
-              ]} 
-              onPress={handleRegister}
-              disabled={loading || isSuccess}
-              activeOpacity={0.85}
-            >
-              {loading ? (
-                <ActivityIndicator color="#fff" />
-              ) : isSuccess ? (
-                <Text style={styles.buttonText}>✓ ¡Registrado!</Text>
-              ) : (
-                <Text style={styles.buttonText}>Registrarse</Text>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>¿Ya tienes una cuenta? </Text>
-          <Link href="/auth/login" asChild>
-            <TouchableOpacity>
-              <Text style={styles.linkText}>Inicia Sesión</Text>
-            </TouchableOpacity>
-          </Link>
-        </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  keyboardView: {
     flex: 1,
-    backgroundColor: '#090d16',
   },
-  content: {
-    flex: 1,
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 28,
     justifyContent: 'center',
+    paddingVertical: 30,
   },
   header: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '800',
-    color: '#f8fafc',
-    letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: '#64748b',
-    marginTop: 6,
-  },
-  form: {
-    backgroundColor: '#111827',
-    borderRadius: 24,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
+    marginBottom: 28,
   },
   inputGroup: {
     marginBottom: 18,
   },
-  label: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#94a3b8',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#090d16',
-    color: '#f8fafc',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderRadius: 14,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: '#1e293b',
-  },
-  button: {
-    backgroundColor: '#10b981',
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    marginTop: 10,
-  },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 28,
   },
   footerText: {
-    color: '#64748b',
+    color: COLORS.textMuted,
     fontSize: 14,
   },
   linkText: {
-    color: '#10b981',
+    color: COLORS.gold,
     fontSize: 14,
     fontWeight: '700',
   },

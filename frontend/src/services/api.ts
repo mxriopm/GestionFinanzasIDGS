@@ -2,11 +2,9 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// ⚠️ Reemplaza esta IP por la IP local de tu computadora en tu red Wi-Fi
-// (Abre la terminal en tu compu y pon "ipconfig" en Windows o "ifconfig" en Mac/Linux)
-const IP_COMPUTADORA = '192.168.137.12'; // <- PON TU IP AQUÍ
+// ⚠️ Dirección IP local asignada a tu servidor backend en Node.js
+const IP_COMPUTADORA = '192.168.137.12';
 
-// Si es emulador Android usas 10.0.2.2, si es web localhost, si es cel físico tu IP local:
 const API_URL = Platform.OS === 'web' 
   ? 'http://localhost:3000' 
   : `http://${IP_COMPUTADORA}:3000`;
@@ -16,20 +14,49 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000, // Timeout de seguridad a los 10 segundos
 });
 
-api.interceptors.request.use(async (config) => {
-  let token: string | null = null;
-  if (Platform.OS === 'web') {
-    token = localStorage.getItem('userToken');
-  } else {
-    token = await SecureStore.getItemAsync('userToken');
-  }
+// Interceptor de Solicitudes: Inyecta el JWT en la cabecera Bearer
+api.interceptors.request.use(
+  async (config) => {
+    let token: string | null = null;
+    try {
+      if (Platform.OS === 'web') {
+        token = localStorage.getItem('userToken');
+      } else {
+        token = await SecureStore.getItemAsync('userToken');
+      }
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch (error) {
+      console.error('Error al recuperar el token de autenticación:', error);
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
+// Interceptor de Respuestas: Manejo automático de tokens expirados (401)
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response && error.response.status === 401) {
+      console.warn('Sesión expirada o token inválido. Limpiando almacenamiento local...');
+      try {
+        if (Platform.OS === 'web') {
+          localStorage.removeItem('userToken');
+        } else {
+          await SecureStore.deleteItemAsync('userToken');
+        }
+      } catch (cleanError) {
+        console.error('Error al limpiar el token expirado:', cleanError);
+      }
+    }
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 export default api;
