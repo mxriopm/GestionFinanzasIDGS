@@ -66,9 +66,17 @@ export default function GastosDashboardScreen() {
   const cargarGastos = useCallback(async () => {
     try {
       const res = await api.get('/gastos');
-      setGastos(res.data.gastos || res.data || []);
+      
+      const lista = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.gastos)
+        ? res.data.gastos
+        : [];
+
+      setGastos(lista);
     } catch (error: any) {
-      const msg = error.response?.data?.error || 'No se pudieron cargar los gastos';
+      setGastos([]);
+      const msg = error.response?.data?.error || error.response?.data?.message || 'No se pudieron cargar los gastos';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
     } finally {
       setLoading(false);
@@ -103,8 +111,10 @@ export default function GastosDashboardScreen() {
         descripcion: descripcion.trim() || undefined,
       });
 
-      const nuevoGasto = res.data.gasto || res.data;
-      setGastos((prev) => [nuevoGasto, ...prev]);
+      const nuevoGasto = res.data?.gasto || res.data;
+      if (nuevoGasto) {
+        setGastos((prev) => [nuevoGasto, ...(Array.isArray(prev) ? prev : [])]);
+      }
       setMonto('');
       setCategoria('');
       setDescripcion('');
@@ -113,7 +123,7 @@ export default function GastosDashboardScreen() {
       const msg = 'Gasto registrado correctamente';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Éxito', msg);
     } catch (error: any) {
-      const msg = error.response?.data?.error || 'Error al guardar el gasto';
+      const msg = error.response?.data?.error || error.response?.data?.message || 'Error al guardar el gasto';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
@@ -123,8 +133,8 @@ export default function GastosDashboardScreen() {
   const handleEliminarGasto = (id: string, desc?: string) => {
     const borrar = async () => {
       try {
-        await api.delete(`/gastos/_id/${id}`);
-        setGastos((prev) => prev.filter((g) => g._id !== id));
+        await api.delete(`/gastos/${id}`);
+        setGastos((prev) => (Array.isArray(prev) ? prev.filter((g) => g._id !== id) : []));
       } catch (error: any) {
         const msg = error.response?.data?.message || 'Error al borrar';
         Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
@@ -142,23 +152,28 @@ export default function GastosDashboardScreen() {
   };
 
   // 🔍 FILTRO EN TIEMPO REAL
-  const gastosFiltrados = gastos.filter((g) => {
-    const termino = busqueda.toLowerCase().trim();
-    if (!termino) return true;
-    return (
-      (g.categoria && g.categoria.toLowerCase().includes(termino)) ||
-      (g.descripcion && g.descripcion.toLowerCase().includes(termino))
-    );
-  });
+  const gastosFiltrados = Array.isArray(gastos)
+    ? gastos.filter((g) => {
+        const termino = busqueda.toLowerCase().trim();
+        if (!termino) return true;
+        return (
+          (g?.categoria && g.categoria.toLowerCase().includes(termino)) ||
+          (g?.descripcion && g.descripcion.toLowerCase().includes(termino)) ||
+          (g?.monto && g.monto.toString().includes(termino))
+        );
+      })
+    : [];
 
-  const totalGastos = gastos.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+  const totalGastos = Array.isArray(gastos)
+    ? gastos.reduce((acc, curr) => acc + (Number(curr?.monto) || 0), 0)
+    : 0;
 
   const obtenerEstadisticasCategorias = () => {
-    if (totalGastos === 0) return [];
+    if (totalGastos === 0 || !Array.isArray(gastos)) return [];
     const mapa: { [key: string]: number } = {};
     gastos.forEach((g) => {
-      const cat = g.categoria || 'Otros';
-      mapa[cat] = (mapa[cat] || 0) + Number(g.monto);
+      const cat = g?.categoria || 'Otros';
+      mapa[cat] = (mapa[cat] || 0) + Number(g?.monto || 0);
     });
 
     return Object.keys(mapa)
@@ -195,7 +210,9 @@ export default function GastosDashboardScreen() {
               <Text style={styles.cardCategoriaBadge}>{item.categoria}</Text>
               <Text style={styles.dot}>•</Text>
               <Text style={styles.cardFecha}>
-                {new Date(item.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })}
+                {item.fecha
+                  ? new Date(item.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
+                  : 'Sin fecha'}
               </Text>
             </View>
           </View>
@@ -203,7 +220,7 @@ export default function GastosDashboardScreen() {
 
         <View style={styles.cardRight}>
           <Text style={styles.cardMonto}>
-            -${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(item.monto)}
+            -${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(item.monto || 0)}
           </Text>
           <TouchableOpacity
             style={styles.deleteIconButton}
@@ -231,13 +248,12 @@ export default function GastosDashboardScreen() {
           label="Total Gastado"
           amount={totalGastos}
           amountColor={COLORS.danger}
-          countText={`${gastos.length} registros`}
+          countText={`${Array.isArray(gastos) ? gastos.length : 0} registros`}
           syncText="Tiempo Real ⚡"
           icon={<MaterialCommunityIcons name="arrow-bottom-left-bold-box-outline" size={24} color={COLORS.danger} />}
         />
 
         <View style={styles.listContainer}>
-          
           {/* BARRA DE BÚSQUEDA */}
           <View style={styles.searchContainer}>
             <Feather name="search" size={16} color={COLORS.textMuted} style={{ marginRight: 8 }} />
@@ -291,7 +307,7 @@ export default function GastosDashboardScreen() {
           ) : (
             <FlatList
               data={gastosFiltrados}
-              keyExtractor={(item) => item._id}
+              keyExtractor={(item, index) => item?._id || `gasto-${index}`}
               renderItem={renderGastoCard}
               contentContainerStyle={styles.flatListContent}
               showsVerticalScrollIndicator={false}
@@ -424,7 +440,7 @@ export default function GastosDashboardScreen() {
 const styles = StyleSheet.create({
   listContainer: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
   flatListContent: { paddingBottom: 90, paddingTop: 10 },
-  
+
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
