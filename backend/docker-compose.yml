@@ -1,0 +1,17 @@
+services:
+  backend-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gestion_finanzas_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    networks:
+      - finanzas-network
+
+networks:
+  finanzas-network:
+    driver: bridge
