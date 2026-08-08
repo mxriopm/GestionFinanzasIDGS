@@ -2,7 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const errorMiddleware = require('./middlewares/errorMiddleware'); // Ruta corregida
+const errorMiddleware = require('./Middlewares/errorMiddleware'); // M mayúscula y sin duplicar
 
 const app = express();
 const port = process.env.PORT || 3000;
