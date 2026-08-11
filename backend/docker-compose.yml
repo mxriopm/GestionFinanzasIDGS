@@ -1,4 +1,19 @@
+version: '3.8'
+
 services:
+  # 1. Base de Datos MongoDB con volumen persistente
+  mongodb:
+    image: mongo:latest
+    container_name: gestion_finanzas_db
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db # 👈 Guarda los datos permanentemente en tu disco
+    networks:
+      - finanzas-network
+
+  # 2. Tu Backend actual
   backend-api:
     build:
       context: .
@@ -9,9 +24,15 @@ services:
       - "3000:3000"
     env_file:
       - .env
+    depends_on:
+      - mongodb # 👈 Espera a que levante la BD antes de iniciar el backend
     networks:
       - finanzas-network
 
 networks:
   finanzas-network:
     driver: bridge
+
+# 3. Declaración del volumen para que NUNCA se borre la información
+volumes:
+  mongo_data:

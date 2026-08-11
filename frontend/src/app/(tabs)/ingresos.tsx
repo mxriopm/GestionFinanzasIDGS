@@ -55,10 +55,18 @@ export default function IngresosScreen() {
   const cargarIngresos = useCallback(async () => {
     try {
       const res = await api.get('/ingresos');
-      const listaIngresos = res.data.ingresos || res.data || [];
+      
+      // ✅ Normalización de respuesta API segura
+      const listaIngresos = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.ingresos)
+        ? res.data.ingresos
+        : [];
+      
       setIngresos(listaIngresos);
     } catch (error: any) {
-      const msg = error.response?.data?.error || 'No se pudieron cargar los ingresos';
+      setIngresos([]);
+      const msg = error.response?.data?.error || error.response?.data?.message || 'No se pudieron cargar los ingresos';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
     } finally {
       setLoading(false);
@@ -99,9 +107,12 @@ export default function IngresosScreen() {
       };
 
       const res = await api.post('/ingresos', payload);
-      const nuevoIngreso = res.data.ingreso || res.data;
+      const nuevoIngreso = res.data?.ingreso || res.data;
       
-      setIngresos((prev) => [nuevoIngreso, ...prev]);
+      if (nuevoIngreso) {
+        setIngresos((prev) => [nuevoIngreso, ...(Array.isArray(prev) ? prev : [])]);
+      }
+
       setMonto('');
       setCategoria('');
       setDescripcion('');
@@ -120,8 +131,8 @@ export default function IngresosScreen() {
   const handleEliminarIngreso = (id: string, desc?: string) => {
     const borrar = async () => {
       try {
-        await api.delete(`/ingresos/_id/${id}`);
-        setIngresos((prev) => prev.filter((i) => i._id !== id));
+        await api.delete(`/ingresos/${id}`);
+        setIngresos((prev) => (Array.isArray(prev) ? prev.filter((i) => i._id !== id) : []));
       } catch (error: any) {
         const msg = error.response?.data?.message || 'Error al borrar';
         Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
@@ -138,13 +149,16 @@ export default function IngresosScreen() {
     }
   };
 
-  const totalIngresos = ingresos.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+  // ✅ Reducción segura protegida con Array.isArray
+  const totalIngresos = Array.isArray(ingresos)
+    ? ingresos.reduce((acc, curr) => acc + (Number(curr?.monto) || 0), 0)
+    : 0;
 
   const formatMoneda = (cant: number) =>
-    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cant);
+    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cant || 0);
 
   const formatFecha = (fStr: string) => {
-    if (!fStr) return '';
+    if (!fStr) return 'Sin fecha';
     return new Date(fStr).toLocaleDateString('es-MX', {
       day: '2-digit',
       month: 'short',
@@ -152,7 +166,7 @@ export default function IngresosScreen() {
   };
 
   const renderIngresoCard = ({ item }: { item: Ingreso }) => {
-    const nombreCategoria = item.categoria || item.concepto || 'General';
+    const nombreCategoria = item?.categoria || item?.concepto || 'General';
 
     return (
       <View style={[globalStyles.cardGlass, styles.cardOverride]}>
@@ -162,21 +176,21 @@ export default function IngresosScreen() {
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.cardDescripcion} numberOfLines={1}>
-              {item.descripcion || item.concepto || nombreCategoria}
+              {item?.descripcion || item?.concepto || nombreCategoria}
             </Text>
             <View style={styles.cardMeta}>
               <Text style={styles.cardCategoriaBadge}>{nombreCategoria}</Text>
               <Text style={styles.dot}>•</Text>
-              <Text style={styles.cardFecha}>{formatFecha(item.fecha)}</Text>
+              <Text style={styles.cardFecha}>{formatFecha(item?.fecha)}</Text>
             </View>
           </View>
         </View>
 
         <View style={styles.cardRight}>
-          <Text style={styles.cardMonto}>+{formatMoneda(item.monto)}</Text>
+          <Text style={styles.cardMonto}>+{formatMoneda(item?.monto)}</Text>
           <TouchableOpacity
             style={styles.deleteIconButton}
-            onPress={() => handleEliminarIngreso(item._id, item.descripcion || item.concepto)}
+            onPress={() => handleEliminarIngreso(item?._id, item?.descripcion || item?.concepto)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
@@ -201,7 +215,7 @@ export default function IngresosScreen() {
           label="TOTAL INGRESADO"
           amount={totalIngresos}
           amountColor={COLORS.primary}
-          countText={`${ingresos.length} entradas`}
+          countText={`${Array.isArray(ingresos) ? ingresos.length : 0} entradas`}
           syncText="Sincronizado"
           icon={<MaterialCommunityIcons name="trending-up" size={24} color={COLORS.primary} />}
         />
@@ -215,8 +229,8 @@ export default function IngresosScreen() {
             </View>
           ) : (
             <FlatList
-              data={ingresos}
-              keyExtractor={(item) => item._id}
+              data={Array.isArray(ingresos) ? ingresos : []}
+              keyExtractor={(item, index) => item?._id || `ingreso-${index}`}
               renderItem={renderIngresoCard}
               contentContainerStyle={styles.flatListContent}
               showsVerticalScrollIndicator={false}

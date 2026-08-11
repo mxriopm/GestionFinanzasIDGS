@@ -2,8 +2,8 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// ⚠️ Dirección IP local asignada a tu servidor backend en Node.js
-const IP_COMPUTADORA = '192.168.137.12';
+// ⚠️ IP asignada a tu servidor backend
+const IP_COMPUTADORA = '192.168.1.92';
 
 const API_URL = Platform.OS === 'web' 
   ? 'http://localhost:3000' 
@@ -14,10 +14,10 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // Timeout de seguridad a los 10 segundos
+  timeout: 10000,
 });
 
-// Interceptor de Solicitudes: Inyecta el JWT en la cabecera Bearer
+// Interceptor de Solicitudes: Inyecta el JWT
 api.interceptors.request.use(
   async (config) => {
     let token: string | null = null;
@@ -39,7 +39,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor de Respuestas: Manejo automático de tokens expirados (401)
+// Interceptor de Respuestas: Manejo de 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {

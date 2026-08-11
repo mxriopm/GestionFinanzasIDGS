@@ -49,7 +49,7 @@ export default function GastosDashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [monto, setMonto] = useState('');
+  const [montoText, setMontoText] = useState('');
   const [categoria, setCategoria] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -66,7 +66,6 @@ export default function GastosDashboardScreen() {
   const cargarGastos = useCallback(async () => {
     try {
       const res = await api.get('/gastos');
-      
       const lista = Array.isArray(res.data)
         ? res.data
         : Array.isArray(res.data?.gastos)
@@ -91,7 +90,10 @@ export default function GastosDashboardScreen() {
   );
 
   const handleCrearGasto = async () => {
-    const montoNum = parseFloat(monto);
+    // Limpieza estricta del string a número
+    const valorLimpio = montoText.replace(',', '.').trim();
+    const montoNum = parseFloat(valorLimpio);
+
     if (isNaN(montoNum) || montoNum <= 0) {
       const msg = 'Ingresa un monto válido mayor a $0';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Monto requerido', msg);
@@ -105,17 +107,32 @@ export default function GastosDashboardScreen() {
 
     try {
       setSubmitting(true);
-      const res = await api.post('/gastos', {
+      const payload = {
         monto: montoNum,
         categoria: categoria.trim(),
         descripcion: descripcion.trim() || undefined,
-      });
+        fecha: new Date().toISOString(),
+      };
 
-      const nuevoGasto = res.data?.gasto || res.data;
-      if (nuevoGasto) {
-        setGastos((prev) => [nuevoGasto, ...(Array.isArray(prev) ? prev : [])]);
+      const res = await api.post('/gastos', payload);
+
+      // Desestructuración segura del objeto respuesta
+      let gastoCreado = res.data?.gasto || res.data;
+
+      if (gastoCreado && typeof gastoCreado === 'object') {
+        // Garantizar propiedades por si el backend no las retorna explícitamente en el res.json
+        gastoCreado = {
+          ...gastoCreado,
+          monto: gastoCreado.monto || montoNum,
+          categoria: gastoCreado.categoria || categoria.trim(),
+          descripcion: gastoCreado.descripcion || descripcion.trim(),
+          fecha: gastoCreado.fecha || new Date().toISOString(),
+        };
+
+        setGastos((prev) => [gastoCreado, ...(Array.isArray(prev) ? prev : [])]);
       }
-      setMonto('');
+
+      setMontoText('');
       setCategoria('');
       setDescripcion('');
       setModalVisible(false);
@@ -151,7 +168,6 @@ export default function GastosDashboardScreen() {
     }
   };
 
-  // 🔍 FILTRO EN TIEMPO REAL
   const gastosFiltrados = Array.isArray(gastos)
     ? gastos.filter((g) => {
         const termino = busqueda.toLowerCase().trim();
@@ -168,26 +184,6 @@ export default function GastosDashboardScreen() {
     ? gastos.reduce((acc, curr) => acc + (Number(curr?.monto) || 0), 0)
     : 0;
 
-  const obtenerEstadisticasCategorias = () => {
-    if (totalGastos === 0 || !Array.isArray(gastos)) return [];
-    const mapa: { [key: string]: number } = {};
-    gastos.forEach((g) => {
-      const cat = g?.categoria || 'Otros';
-      mapa[cat] = (mapa[cat] || 0) + Number(g?.monto || 0);
-    });
-
-    return Object.keys(mapa)
-      .map((cat) => ({
-        categoria: cat,
-        monto: mapa[cat],
-        porcentaje: Math.round((mapa[cat] / totalGastos) * 100),
-      }))
-      .sort((a, b) => b.monto - a.monto)
-      .slice(0, 4);
-  };
-
-  const estadisticas = obtenerEstadisticasCategorias();
-
   const getCategoriaIcon = (catName?: string) => {
     if (!catName) return { icon: 'wallet-outline', color: COLORS.danger };
     const cat = CATEGORIAS_RAPIDAS.find((c) => c.nombre.toLowerCase() === catName.toLowerCase());
@@ -195,7 +191,9 @@ export default function GastosDashboardScreen() {
   };
 
   const renderGastoCard = ({ item }: { item: Gasto }) => {
-    const { icon, color } = getCategoriaIcon(item.categoria);
+    const { icon, color } = getCategoriaIcon(item?.categoria);
+    const valorMonto = Number(item?.monto) || 0;
+
     return (
       <View style={[globalStyles.cardGlass, styles.cardOverride]}>
         <View style={styles.cardLeft}>
@@ -204,13 +202,13 @@ export default function GastosDashboardScreen() {
           </View>
           <View style={styles.cardInfo}>
             <Text style={styles.cardDescripcion} numberOfLines={1}>
-              {item.descripcion || item.categoria}
+              {item?.descripcion || item?.categoria || 'Gasto General'}
             </Text>
             <View style={styles.cardMeta}>
-              <Text style={styles.cardCategoriaBadge}>{item.categoria}</Text>
+              <Text style={styles.cardCategoriaBadge}>{item?.categoria || 'General'}</Text>
               <Text style={styles.dot}>•</Text>
               <Text style={styles.cardFecha}>
-                {item.fecha
+                {item?.fecha
                   ? new Date(item.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short' })
                   : 'Sin fecha'}
               </Text>
@@ -220,11 +218,11 @@ export default function GastosDashboardScreen() {
 
         <View style={styles.cardRight}>
           <Text style={styles.cardMonto}>
-            -${new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(item.monto || 0)}
+            -{new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(valorMonto)}
           </Text>
           <TouchableOpacity
             style={styles.deleteIconButton}
-            onPress={() => handleEliminarGasto(item._id, item.descripcion)}
+            onPress={() => handleEliminarGasto(item?._id, item?.descripcion)}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Feather name="trash-2" size={16} color={COLORS.danger} />
@@ -254,7 +252,6 @@ export default function GastosDashboardScreen() {
         />
 
         <View style={styles.listContainer}>
-          {/* BARRA DE BÚSQUEDA */}
           <View style={styles.searchContainer}>
             <Feather name="search" size={16} color={COLORS.textMuted} style={{ marginRight: 8 }} />
             <TextInput
@@ -270,33 +267,6 @@ export default function GastosDashboardScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
-
-          {/* ESTADÍSTICAS */}
-          {estadisticas.length > 0 && !busqueda && (
-            <View style={[globalStyles.cardGlass, styles.chartCard]}>
-              <View style={styles.chartHeader}>
-                <Text style={styles.chartTitle}>Distribución de Gastos</Text>
-                <Feather name="pie-chart" size={16} color={COLORS.primary} />
-              </View>
-
-              {estadisticas.map((stat) => {
-                const { color } = getCategoriaIcon(stat.categoria);
-                return (
-                  <View key={stat.categoria} style={styles.statRow}>
-                    <View style={styles.statLabelRow}>
-                      <Text style={styles.statCategoryText}>{stat.categoria}</Text>
-                      <Text style={styles.statAmountText}>
-                        ${stat.monto.toLocaleString('es-MX')} ({stat.porcentaje}%)
-                      </Text>
-                    </View>
-                    <View style={styles.statTrack}>
-                      <View style={[styles.statBar, { width: `${stat.porcentaje}%`, backgroundColor: color }]} />
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
 
           <Text style={globalStyles.titleModern}>Movimientos Recientes</Text>
 
@@ -359,8 +329,8 @@ export default function GastosDashboardScreen() {
                     <TextInput
                       placeholder="0.00"
                       placeholderTextColor={COLORS.textMuted}
-                      value={monto}
-                      onChangeText={setMonto}
+                      value={montoText}
+                      onChangeText={setMontoText}
                       keyboardType="numeric"
                       style={[globalStyles.inputGlass, { flex: 1, fontSize: 20, fontWeight: '700', borderWidth: 0 }]}
                     />
@@ -440,7 +410,6 @@ export default function GastosDashboardScreen() {
 const styles = StyleSheet.create({
   listContainer: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
   flatListContent: { paddingBottom: 90, paddingTop: 10 },
-
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -453,17 +422,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.inputBorder,
   },
   searchInput: { flex: 1, color: COLORS.textPrimary, fontSize: 13, fontWeight: '600' },
-
-  chartCard: { padding: 16, marginBottom: 16, backgroundColor: '#151e32' },
-  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
-  chartTitle: { color: COLORS.textPrimary, fontSize: 14, fontWeight: '800' },
-  statRow: { marginBottom: 10 },
-  statLabelRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
-  statCategoryText: { color: COLORS.textSecondary, fontSize: 12, fontWeight: '600' },
-  statAmountText: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '700' },
-  statTrack: { height: 6, backgroundColor: COLORS.inputBg, borderRadius: 3, overflow: 'hidden' },
-  statBar: { height: '100%', borderRadius: 3 },
-
   cardOverride: {
     marginBottom: 10,
     padding: 14,
