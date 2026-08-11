@@ -1,5 +1,6 @@
 const modeloAportacion = require('../models/aportacionModel');
 const modeloPresupuesto = require('../models/presupuestoModel');
+const modeloGasto = require('../models/gastoModel');
 
 function CrearAportacion(req, res) {
     // primero verificamos que el presupuesto exista y sea del usuario logueado
@@ -16,7 +17,24 @@ function CrearAportacion(req, res) {
     })
     .then((aportacion) => {
         if (aportacion) {
-            res.status(201).json({ message: 'aportación registrada correctamente', aportacion });
+            // También registrar como gasto para disminuir el balance disponible
+            const nuevoGasto = new modeloGasto({
+                usuario: aportacion.usuario,
+                monto: aportacion.monto,
+                categoria: 'Aportación a meta',
+                descripcion: aportacion.concepto || `Aportación a presupuesto ${aportacion.presupuesto}`,
+                fecha: aportacion.fecha || Date.now()
+            });
+
+            // Intentamos guardar el gasto, pero no impedimos que la aportación sea considerada registrada
+            return nuevoGasto.save()
+                .then(() => {
+                    res.status(201).json({ message: 'aportación registrada correctamente', aportacion });
+                })
+                .catch(() => {
+                    // Si falla crear el gasto, aún devolvemos éxito para la aportación
+                    res.status(201).json({ message: 'aportación registrada (gasto no registrado)', aportacion });
+                });
         }
     })
     .catch((error) => {
