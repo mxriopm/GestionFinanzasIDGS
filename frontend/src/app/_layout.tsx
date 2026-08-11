@@ -1,5 +1,7 @@
 import React, { useContext, useEffect } from 'react';
 import { Slot, useRouter, useSegments } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { Ionicons, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { AuthProvider, AuthContext } from '../context/AuthContext';
 
 function RootLayoutNav() {
@@ -23,6 +25,16 @@ function RootLayoutNav() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+    ...MaterialCommunityIcons.font,
+    ...Feather.font,
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <AuthProvider>
       <RootLayoutNav />

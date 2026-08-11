@@ -105,7 +105,9 @@ function calcularAhorroSugerido(presupuesto, montoAhorrado) {
 
 module.exports = {
     CrearPresupuesto,
+    crearPresupuesto: CrearPresupuesto,
     ObtenerPresupuestos,
+    obtenerPresupuestos: ObtenerPresupuestos,
     consultarPresupuesto,
     eliminarPresupuesto,
     modificarPresupuesto

@@ -43,8 +43,16 @@ export default function ResumenFinancieroScreen() {
         api.get('/gastos')
       ]);
 
-      const arrayIngresos = resIngresos.data.ingresos || resIngresos.data || [];
-      const arrayGastos: Gasto[] = resGastos.data.gastos || resGastos.data || [];
+      const arrayIngresos = Array.isArray(resIngresos.data.ingresos)
+        ? resIngresos.data.ingresos
+        : Array.isArray(resIngresos.data)
+        ? resIngresos.data
+        : [];
+      const arrayGastos: Gasto[] = Array.isArray(resGastos.data.gastos)
+        ? resGastos.data.gastos
+        : Array.isArray(resGastos.data)
+        ? resGastos.data
+        : [];
 
       const sumIngresos = arrayIngresos.reduce((acc: number, curr: any) => acc + (Number(curr.monto) || 0), 0);
       const sumGastos = arrayGastos.reduce((acc: number, curr: any) => acc + (Number(curr.monto) || 0), 0);

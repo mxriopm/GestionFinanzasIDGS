@@ -77,7 +77,12 @@ export default function PresupuestoScreen() {
   const cargarPresupuestos = useCallback(async () => {
     try {
       const res = await api.get('/presupuestos');
-      const lista = res.data.presupuestos || res.data || [];
+      const lista = Array.isArray(res.data.presupuestos)
+        ? res.data.presupuestos
+        : Array.isArray(res.data)
+        ? res.data
+        : [];
+
       setPresupuestos(lista);
     } catch (error: any) {
       const msg = error.response?.data?.error || 'No se pudieron cargar los presupuestos';
@@ -226,8 +231,9 @@ export default function PresupuestoScreen() {
     });
   };
 
-  const totalObjetivo = presupuestos.reduce((acc, curr) => acc + (Number(curr.montoObjetivo) || 0), 0);
-  const totalAhorrado = presupuestos.reduce((acc, curr) => acc + (Number(curr.montoAhorrado) || 0), 0);
+  const presupuestoArray = Array.isArray(presupuestos) ? presupuestos : [];
+  const totalObjetivo = presupuestoArray.reduce((acc, curr) => acc + (Number(curr.montoObjetivo) || 0), 0);
+  const totalAhorrado = presupuestoArray.reduce((acc, curr) => acc + (Number(curr.montoAhorrado) || 0), 0);
 
   const renderPresupuestoCard = ({ item }: { item: Presupuesto }) => {
     const ahorrado = item.montoAhorrado || 0;

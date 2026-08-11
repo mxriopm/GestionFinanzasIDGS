@@ -95,7 +95,9 @@ function modificarIngreso(req, res) {
 
 module.exports = {
     CrearIngreso,
+    crearIngreso: CrearIngreso,
     ObtenerIngresos,
+    obtenerIngresos: ObtenerIngresos,
     consultarIngreso,
     eliminarIngreso,
     modificarIngreso

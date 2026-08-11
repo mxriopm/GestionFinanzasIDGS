@@ -55,7 +55,13 @@ export default function IngresosScreen() {
   const cargarIngresos = useCallback(async () => {
     try {
       const res = await api.get('/ingresos');
-      const listaIngresos = res.data.ingresos || res.data || [];
+
+      const listaIngresos = Array.isArray(res.data.ingresos)
+        ? res.data.ingresos
+        : Array.isArray(res.data)
+        ? res.data
+        : [];
+
       setIngresos(listaIngresos);
     } catch (error: any) {
       const msg = error.response?.data?.error || 'No se pudieron cargar los ingresos';
@@ -100,12 +106,18 @@ export default function IngresosScreen() {
 
       const res = await api.post('/ingresos', payload);
       const nuevoIngreso = res.data.ingreso || res.data;
-      
-      setIngresos((prev) => [nuevoIngreso, ...prev]);
+      const registroValido = {
+        ...nuevoIngreso,
+        _id: nuevoIngreso._id ?? String(Date.now()),
+      };
+
+      setIngresos((prev) => [registroValido, ...prev]);
       setMonto('');
       setCategoria('');
       setDescripcion('');
       setModalVisible(false);
+
+      await cargarIngresos();
 
       const msg = '¡Ingreso registrado con éxito!';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Éxito', msg);
@@ -138,7 +150,8 @@ export default function IngresosScreen() {
     }
   };
 
-  const totalIngresos = ingresos.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
+  const ingresosArray = Array.isArray(ingresos) ? ingresos : [];
+  const totalIngresos = ingresosArray.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
 
   const formatMoneda = (cant: number) =>
     new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cant);
@@ -201,7 +214,7 @@ export default function IngresosScreen() {
           label="TOTAL INGRESADO"
           amount={totalIngresos}
           amountColor={COLORS.primary}
-          countText={`${ingresos.length} entradas`}
+          countText={`${ingresosArray.length} entradas`}
           syncText="Sincronizado"
           icon={<MaterialCommunityIcons name="trending-up" size={24} color={COLORS.primary} />}
         />
@@ -215,8 +228,8 @@ export default function IngresosScreen() {
             </View>
           ) : (
             <FlatList
-              data={ingresos}
-              keyExtractor={(item) => item._id}
+              data={ingresosArray}
+              keyExtractor={(item, index) => item._id ?? String(index)}
               renderItem={renderIngresoCard}
               contentContainerStyle={styles.flatListContent}
               showsVerticalScrollIndicator={false}

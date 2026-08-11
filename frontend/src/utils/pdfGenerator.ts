@@ -123,7 +123,6 @@ export const generarReportePDF = async (
       await Sharing.shareAsync(uri, { UTI: '.pdf', mimeType: 'application/pdf' });
     }
   } catch (error) {
-    console.error('Error al generar PDF:', error);
     const msg = 'No se pudo exportar el reporte a PDF';
     Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
   }

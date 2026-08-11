@@ -32,7 +32,6 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('Error al recuperar el token de autenticación:', error);
     }
     return config;
   },
@@ -44,7 +43,6 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn('Sesión expirada o token inválido. Limpiando almacenamiento local...');
       try {
         if (Platform.OS === 'web') {
           localStorage.removeItem('userToken');
@@ -52,7 +50,6 @@ api.interceptors.response.use(
           await SecureStore.deleteItemAsync('userToken');
         }
       } catch (cleanError) {
-        console.error('Error al limpiar el token expirado:', cleanError);
       }
     }
     return Promise.reject(error);

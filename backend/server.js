@@ -3,6 +3,4 @@ const conexion = require('./src/config/conexion');
 
 conexion.conect();
 
-app.listen(port, () => {
-  console.log(`🚀 Servidor escuchando en http://localhost:${port}`);
-});
+app.listen(port);

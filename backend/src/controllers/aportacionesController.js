@@ -55,6 +55,8 @@ function eliminarAportacion(req, res) {
 
 module.exports = {
     CrearAportacion,
+    crearAportacion: CrearAportacion,
     ObtenerAportacionesPorPresupuesto,
+    obtenerAportaciones: ObtenerAportacionesPorPresupuesto,
     eliminarAportacion
 };

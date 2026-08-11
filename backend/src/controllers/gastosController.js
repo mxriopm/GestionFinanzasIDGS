@@ -66,7 +66,9 @@ function modificarGasto(req, res) {
 
 module.exports = {
     CrearGasto,
+    crearGasto: CrearGasto,
     ObtenerGastos,
+    obtenerGastos: ObtenerGastos,
     consultarGasto,
     eliminarGasto,
     modificarGasto
