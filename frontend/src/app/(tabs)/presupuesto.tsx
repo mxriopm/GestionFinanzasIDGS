@@ -30,9 +30,10 @@ interface Presupuesto {
   nombre?: string;
   concepto?: string;
   montoObjetivo: number;
-  montoAhorrado: number;
+  montoAhorrado?: number;
   fechaLimite: string;
   frecuenciaAhorro: 'semanal' | 'quincenal' | 'mensual';
+  estado?: 'activo' | 'cumplido' | 'vencido';
 }
 
 export default function PresupuestoScreen() {
@@ -159,6 +160,13 @@ export default function PresupuestoScreen() {
   };
 
   const handleAbrirAbono = (item: Presupuesto) => {
+    const restante = item.montoObjetivo - (item.montoAhorrado || 0);
+    if (item.estado === 'cumplido' || restante <= 0) {
+      const msg = 'Esta meta ya está cumplida. No puedes abonar más.';
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Meta cumplida', msg);
+      return;
+    }
+
     setMetaSeleccionada(item);
     setMontoAbono('');
     setModalAbonoVisible(true);
@@ -168,9 +176,17 @@ export default function PresupuestoScreen() {
     if (!metaSeleccionada) return;
 
     const abonoNum = parseFloat(montoAbono);
+    const restante = metaSeleccionada.montoObjetivo - (metaSeleccionada.montoAhorrado || 0);
+
     if (isNaN(abonoNum) || abonoNum <= 0) {
       const msg = 'Ingresa un monto válido mayor a $0';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Monto requerido', msg);
+      return;
+    }
+
+    if (abonoNum > restante) {
+      const msg = `El monto ingresado supera lo que falta (${formatMoneda(restante)}). Ajusta tu abono.`;
+      Platform.OS === 'web' ? alert(msg) : Alert.alert('Pago excesivo', msg);
       return;
     }
 
@@ -281,15 +297,20 @@ export default function PresupuestoScreen() {
 
         <View style={styles.progressFooter}>
           <Text style={styles.porcentajeText}>{porcentaje}% completado</Text>
-          <Text style={styles.restanteText}>
-            Faltan {formatMoneda(Math.max(item.montoObjetivo - ahorrado, 0))}
-          </Text>
+          {item.estado === 'cumplido' || porcentaje >= 100 ? (
+            <Text style={styles.metaCumplidaText}>Meta cumplida</Text>
+          ) : (
+            <Text style={styles.restanteText}>
+              Faltan {formatMoneda(Math.max(item.montoObjetivo - ahorrado, 0))}
+            </Text>
+          )}
         </View>
 
         <TouchableOpacity
-          style={styles.btnAbonar}
+          style={[styles.btnAbonar, (item.estado === 'cumplido' || porcentaje >= 100) && styles.btnAbonarDisabled]}
           onPress={() => handleAbrirAbono(item)}
           activeOpacity={0.85}
+          disabled={item.estado === 'cumplido' || porcentaje >= 100}
         >
           <Ionicons name="add-circle-outline" size={18} color="#ffffff" style={{ marginRight: 6 }} />
           <Text style={styles.btnAbonarText}>ABONAR DINERO A ESTA META</Text>
@@ -649,6 +670,7 @@ const styles = StyleSheet.create({
   progressFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
   porcentajeText: { color: COLORS.primary, fontSize: 13, fontWeight: '800' },
   restanteText: { color: '#cbd5e1', fontSize: 12, fontWeight: '600' },
+  metaCumplidaText: { color: COLORS.success, fontSize: 12, fontWeight: '700' },
   btnAbonar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -659,6 +681,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 14,
     marginTop: 16,
+  },
+  btnAbonarDisabled: {
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    borderColor: 'rgba(255, 255, 255, 0.12)',
   },
   btnAbonarText: { color: '#ffffff', fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
   centerContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 50 },

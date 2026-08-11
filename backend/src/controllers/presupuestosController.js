@@ -23,7 +23,8 @@ function ObtenerPresupuestos(req, res) {
         const conProgreso = await Promise.all(
             presupuestos.map(async (p) => {
                 const ahorrado = await calcularAhorrado(p._id);
-                return { ...p.toObject(), montoAhorrado: ahorrado };
+                const estado = ahorrado >= p.montoObjetivo ? 'cumplido' : p.estado || 'activo';
+                return { ...p.toObject(), montoAhorrado: ahorrado, estado };
             })
         );
         res.status(200).json({ presupuestos: conProgreso });
@@ -41,9 +42,10 @@ function consultarPresupuesto(req, res) {
     .then(async (presupuesto) => {
         const ahorrado = await calcularAhorrado(presupuesto._id);
         const sugerido = calcularAhorroSugerido(presupuesto, ahorrado);
+        const estado = ahorrado >= presupuesto.montoObjetivo ? 'cumplido' : presupuesto.estado || 'activo';
 
         res.status(200).json({
-            presupuesto: { ...presupuesto.toObject(), montoAhorrado: ahorrado },
+            presupuesto: { ...presupuesto.toObject(), montoAhorrado: ahorrado, estado },
             ahorroSugeridoPorPeriodo: sugerido
         });
     })
