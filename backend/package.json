@@ -2,9 +2,10 @@
   "name": "gestionfinanzasidgs",
   "version": "1.0.0",
   "main": "server.js",
-  "scripts": {
+"scripts": {
     "dev": "nodemon server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "build": "echo 'Build exitoso'"
   },
   "keywords": [],
   "author": "",
