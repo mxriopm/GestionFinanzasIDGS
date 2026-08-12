@@ -14,7 +14,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   ScrollView,
-  StatusBar
+  StatusBar,
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import api from '../../services/api';
@@ -45,7 +45,7 @@ export default function IngresosScreen() {
   const [ingresos, setIngresos] = useState<Ingreso[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  
+
   const [modalVisible, setModalVisible] = useState(false);
   const [monto, setMonto] = useState('');
   const [categoria, setCategoria] = useState('');
@@ -55,28 +55,19 @@ export default function IngresosScreen() {
   const cargarIngresos = useCallback(async () => {
     try {
       const res = await api.get('/ingresos');
-<<<<<<< HEAD
-
-      const listaIngresos = Array.isArray(res.data.ingresos)
+      const listaIngresos = Array.isArray(res.data?.ingresos)
         ? res.data.ingresos
         : Array.isArray(res.data)
         ? res.data
         : [];
 
-=======
-      
-      // ✅ Normalización de respuesta API segura
-      const listaIngresos = Array.isArray(res.data)
-        ? res.data
-        : Array.isArray(res.data?.ingresos)
-        ? res.data.ingresos
-        : [];
-      
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
       setIngresos(listaIngresos);
     } catch (error: any) {
       setIngresos([]);
-      const msg = error.response?.data?.error || error.response?.data?.message || 'No se pudieron cargar los ingresos';
+      const msg =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        'No se pudieron cargar los ingresos';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
     } finally {
       setLoading(false);
@@ -113,26 +104,17 @@ export default function IngresosScreen() {
         descripcion: descripcion.trim() || undefined,
         concepto: descripcion.trim() || categoria.trim(),
         mes: fechaActual.getMonth() + 1,
-        año: fechaActual.getFullYear()
+        año: fechaActual.getFullYear(),
       };
 
       const res = await api.post('/ingresos', payload);
-<<<<<<< HEAD
-      const nuevoIngreso = res.data.ingreso || res.data;
+      const nuevoIngreso = res.data?.ingreso || res.data;
       const registroValido = {
-        ...nuevoIngreso,
-        _id: nuevoIngreso._id ?? String(Date.now()),
+        ...(nuevoIngreso || {}),
+        _id: nuevoIngreso?._id ?? String(Date.now()),
       };
 
-      setIngresos((prev) => [registroValido, ...prev]);
-=======
-      const nuevoIngreso = res.data?.ingreso || res.data;
-      
-      if (nuevoIngreso) {
-        setIngresos((prev) => [nuevoIngreso, ...(Array.isArray(prev) ? prev : [])]);
-      }
-
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
+      setIngresos((prev) => [registroValido, ...(Array.isArray(prev) ? prev : [])]);
       setMonto('');
       setCategoria('');
       setDescripcion('');
@@ -143,7 +125,10 @@ export default function IngresosScreen() {
       const msg = '¡Ingreso registrado con éxito!';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Éxito', msg);
     } catch (error: any) {
-      const msg = error.response?.data?.error || error.response?.data?.message || 'Error al guardar el ingreso';
+      const msg =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        'Error al guardar el ingreso';
       Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
     } finally {
       setSubmitting(false);
@@ -166,20 +151,16 @@ export default function IngresosScreen() {
     } else {
       Alert.alert('Eliminar Movimiento', `¿Deseas borrar "${desc || 'este ingreso'}"?`, [
         { text: 'Cancelar', style: 'cancel' },
-        { text: 'Eliminar', style: 'destructive', onPress: borrar }
+        { text: 'Eliminar', style: 'destructive', onPress: borrar },
       ]);
     }
   };
 
-<<<<<<< HEAD
   const ingresosArray = Array.isArray(ingresos) ? ingresos : [];
-  const totalIngresos = ingresosArray.reduce((acc, curr) => acc + (Number(curr.monto) || 0), 0);
-=======
-  // ✅ Reducción segura protegida con Array.isArray
-  const totalIngresos = Array.isArray(ingresos)
-    ? ingresos.reduce((acc, curr) => acc + (Number(curr?.monto) || 0), 0)
-    : 0;
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
+  const totalIngresos = ingresosArray.reduce(
+    (acc, curr) => acc + (Number(curr?.monto) || 0),
+    0
+  );
 
   const formatMoneda = (cant: number) =>
     new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cant || 0);
@@ -242,11 +223,7 @@ export default function IngresosScreen() {
           label="TOTAL INGRESADO"
           amount={totalIngresos}
           amountColor={COLORS.primary}
-<<<<<<< HEAD
           countText={`${ingresosArray.length} entradas`}
-=======
-          countText={`${Array.isArray(ingresos) ? ingresos.length : 0} entradas`}
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
           syncText="Sincronizado"
           icon={<MaterialCommunityIcons name="trending-up" size={24} color={COLORS.primary} />}
         />
@@ -260,13 +237,8 @@ export default function IngresosScreen() {
             </View>
           ) : (
             <FlatList
-<<<<<<< HEAD
               data={ingresosArray}
-              keyExtractor={(item, index) => item._id ?? String(index)}
-=======
-              data={Array.isArray(ingresos) ? ingresos : []}
-              keyExtractor={(item, index) => item?._id || `ingreso-${index}`}
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
+              keyExtractor={(item, index) => item?._id ?? `ingreso-${index}`}
               renderItem={renderIngresoCard}
               contentContainerStyle={styles.flatListContent}
               showsVerticalScrollIndicator={false}
@@ -284,7 +256,6 @@ export default function IngresosScreen() {
           )}
         </View>
 
-        {/* Botón Flotante (+) */}
         <TouchableOpacity
           style={styles.fabButton}
           onPress={() => setModalVisible(true)}
@@ -293,7 +264,6 @@ export default function IngresosScreen() {
           <Ionicons name="add" size={32} color="#ffffff" />
         </TouchableOpacity>
 
-        {/* Modal de Registro */}
         <Modal
           visible={modalVisible}
           animationType="slide"
@@ -341,7 +311,7 @@ export default function IngresosScreen() {
                           key={cat.nombre}
                           style={[
                             styles.chipCategory,
-                            isSelected && { backgroundColor: 'rgba(14, 165, 233, 0.25)', borderColor: COLORS.primary }
+                            isSelected && { backgroundColor: 'rgba(14, 165, 233, 0.25)', borderColor: COLORS.primary },
                           ]}
                           onPress={() => setCategoria(cat.nombre)}
                         >

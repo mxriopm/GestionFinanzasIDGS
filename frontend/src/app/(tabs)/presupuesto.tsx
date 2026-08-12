@@ -30,15 +30,9 @@ interface Presupuesto {
   nombre?: string;
   montoObjetivo: number;
   montoAhorrado?: number;
-<<<<<<< HEAD
-  fechaLimite: string;
-  frecuenciaAhorro: 'semanal' | 'quincenal' | 'mensual';
-  estado?: 'activo' | 'cumplido' | 'vencido';
-=======
   montoGastado?: number;
   mes?: number;
   año?: number;
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
 }
 
 export default function PresupuestoScreen() {
@@ -54,19 +48,10 @@ export default function PresupuestoScreen() {
   const cargarPresupuestos = useCallback(async () => {
     try {
       const res = await api.get('/presupuestos');
-<<<<<<< HEAD
-      const lista = Array.isArray(res.data.presupuestos)
-        ? res.data.presupuestos
-        : Array.isArray(res.data)
-        ? res.data
-=======
-
-      // ✅ Normalización y validación defensiva de respuesta
       const lista = Array.isArray(res.data)
         ? res.data
         : Array.isArray(res.data?.presupuestos)
         ? res.data.presupuestos
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
         : [];
 
       setPresupuestos(lista);
@@ -133,72 +118,11 @@ export default function PresupuestoScreen() {
     }
   };
 
-<<<<<<< HEAD
-  const handleAbrirAbono = (item: Presupuesto) => {
-    const restante = item.montoObjetivo - (item.montoAhorrado || 0);
-    if (item.estado === 'cumplido' || restante <= 0) {
-      const msg = 'Esta meta ya está cumplida. No puedes abonar más.';
-      Platform.OS === 'web' ? alert(msg) : Alert.alert('Meta cumplida', msg);
-      return;
-    }
-
-    setMetaSeleccionada(item);
-    setMontoAbono('');
-    setModalAbonoVisible(true);
-  };
-
-  const handleGuardarAbono = async () => {
-    if (!metaSeleccionada) return;
-
-    const abonoNum = parseFloat(montoAbono);
-    const restante = metaSeleccionada.montoObjetivo - (metaSeleccionada.montoAhorrado || 0);
-
-    if (isNaN(abonoNum) || abonoNum <= 0) {
-      const msg = 'Ingresa un monto válido mayor a $0';
-      Platform.OS === 'web' ? alert(msg) : Alert.alert('Monto requerido', msg);
-      return;
-    }
-
-    if (abonoNum > restante) {
-      const msg = `El monto ingresado supera lo que falta (${formatMoneda(restante)}). Ajusta tu abono.`;
-      Platform.OS === 'web' ? alert(msg) : Alert.alert('Pago excesivo', msg);
-      return;
-    }
-
-    try {
-      setSubmittingAbono(true);
-
-      await api.post('/aportaciones', {
-        presupuesto: metaSeleccionada._id,
-        monto: abonoNum,
-        concepto: `Abono a ${metaSeleccionada.nombre || metaSeleccionada.concepto}`
-      });
-
-      setModalAbonoVisible(false);
-      setMetaSeleccionada(null);
-      setMontoAbono('');
-      cargarPresupuestos();
-
-      const msg = '¡Abono registrado con éxito!';
-      Platform.OS === 'web' ? alert(msg) : Alert.alert('¡Meta Actualizada!', msg);
-    } catch (error: any) {
-      const msg = error.response?.data?.error || error.response?.data?.message || 'Error al guardar el abono';
-      Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
-    } finally {
-      setSubmittingAbono(false);
-    }
-  };
-
-  const handleEliminarPresupuesto = (id: string, itemNombre: string) => {
-=======
   const handleEliminarPresupuesto = (id: string, cat?: string) => {
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
     const borrar = async () => {
       try {
         await api.delete(`/presupuestos/${id}`);
-        setPresupuestos((prev) =>
-          Array.isArray(prev) ? prev.filter((p) => p._id !== id) : []
-        );
+        setPresupuestos((prev) => (Array.isArray(prev) ? prev.filter((p) => p._id !== id) : []));
       } catch (error: any) {
         const msg = error.response?.data?.message || 'Error al borrar';
         Platform.OS === 'web' ? alert(msg) : Alert.alert('Error', msg);
@@ -219,36 +143,19 @@ export default function PresupuestoScreen() {
     }
   };
 
-  // ✅ REDUCE PROTEGIDO CON Array.isArray()
   const totalObjetivo = Array.isArray(presupuestos)
-    ? presupuestos.reduce(
-        (acc, curr) => acc + (Number(curr?.montoObjetivo) || 0),
-        0
-      )
+    ? presupuestos.reduce((acc, curr) => acc + (Number(curr?.montoObjetivo) || 0), 0)
     : 0;
 
-<<<<<<< HEAD
-  const formatFecha = (fStr: string) => {
-    if (!fStr) return '';
-    return new Date(fStr).toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric'
-    });
-  };
-
-  const presupuestoArray = Array.isArray(presupuestos) ? presupuestos : [];
-  const totalObjetivo = presupuestoArray.reduce((acc, curr) => acc + (Number(curr.montoObjetivo) || 0), 0);
-  const totalAhorrado = presupuestoArray.reduce((acc, curr) => acc + (Number(curr.montoAhorrado) || 0), 0);
-=======
   const totalAhorrado = Array.isArray(presupuestos)
     ? presupuestos.reduce(
-        (acc, curr) =>
-          acc + (Number(curr?.montoAhorrado || curr?.montoGastado) || 0),
+        (acc, curr) => acc + (Number(curr?.montoAhorrado || curr?.montoGastado) || 0),
         0
       )
     : 0;
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
+
+  const formatMoneda = (cant: number) =>
+    new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' }).format(cant || 0);
 
   const renderPresupuestoCard = ({ item }: { item: Presupuesto }) => {
     const objetivo = Number(item?.montoObjetivo) || 0;
@@ -270,47 +177,10 @@ export default function PresupuestoScreen() {
           </TouchableOpacity>
         </View>
 
-<<<<<<< HEAD
-        <View style={styles.amountsRow}>
-          <View>
-            <Text style={styles.amountLabel}>Monto Ahorrado</Text>
-            <Text style={styles.amountValueAhorrado}>{formatMoneda(ahorrado)}</Text>
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={styles.amountLabel}>Meta Objetivo</Text>
-            <Text style={styles.amountValueObjetivo}>{formatMoneda(item.montoObjetivo)}</Text>
-          </View>
-        </View>
-
-        <View style={styles.progressTrack}>
-          <View style={[styles.progressBar, { width: `${porcentaje}%` }]} />
-        </View>
-
-        <View style={styles.progressFooter}>
-          <Text style={styles.porcentajeText}>{porcentaje}% completado</Text>
-          {item.estado === 'cumplido' || porcentaje >= 100 ? (
-            <Text style={styles.metaCumplidaText}>Meta cumplida</Text>
-          ) : (
-            <Text style={styles.restanteText}>
-              Faltan {formatMoneda(Math.max(item.montoObjetivo - ahorrado, 0))}
-            </Text>
-          )}
-        </View>
-
-        <TouchableOpacity
-          style={[styles.btnAbonar, (item.estado === 'cumplido' || porcentaje >= 100) && styles.btnAbonarDisabled]}
-          onPress={() => handleAbrirAbono(item)}
-          activeOpacity={0.85}
-          disabled={item.estado === 'cumplido' || porcentaje >= 100}
-        >
-          <Ionicons name="add-circle-outline" size={18} color="#ffffff" style={{ marginRight: 6 }} />
-          <Text style={styles.btnAbonarText}>ABONAR DINERO A ESTA META</Text>
-        </TouchableOpacity>
-=======
         <View style={styles.montoRow}>
-          <Text style={styles.montoLabel}>Límite: ${objetivo.toLocaleString('es-MX')}</Text>
+          <Text style={styles.montoLabel}>Límite: {formatMoneda(objetivo)}</Text>
           <Text style={styles.montoProgress}>
-            ${usado.toLocaleString('es-MX')} ({porcentaje}%)
+            {formatMoneda(usado)} ({porcentaje}%)
           </Text>
         </View>
 
@@ -325,7 +195,6 @@ export default function PresupuestoScreen() {
             ]}
           />
         </View>
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
       </View>
     );
   };
@@ -444,60 +313,6 @@ export default function PresupuestoScreen() {
 
 const styles = StyleSheet.create({
   listContainer: { flex: 1, paddingHorizontal: 20, paddingTop: 16 },
-<<<<<<< HEAD
-  sectionHeaderTitle: { color: COLORS.textPrimary, fontSize: 17, fontWeight: '800', marginBottom: 14 },
-  flatListContent: { paddingBottom: 100, paddingTop: 4 },
-  cardSeparada: {
-    marginBottom: 20,
-    padding: 18,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-    backgroundColor: '#151e32',
-  },
-  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardTitleRow: { flexDirection: 'row', alignItems: 'center', flex: 1 },
-  targetIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: 'rgba(14, 165, 233, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(14, 165, 233, 0.4)',
-  },
-  cardNombre: { color: '#ffffff', fontSize: 17, fontWeight: '800' },
-  cardSubtext: { color: '#cbd5e1', fontSize: 12, marginTop: 3, fontWeight: '600' },
-  deleteBtn: { padding: 4, backgroundColor: 'rgba(244, 63, 94, 0.15)', borderRadius: 10 },
-  amountsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 18, marginBottom: 8 },
-  amountLabel: { color: '#94a3b8', fontSize: 11, fontWeight: '800', textTransform: 'uppercase', letterSpacing: 0.5 },
-  amountValueAhorrado: { color: COLORS.success, fontSize: 18, fontWeight: '900', marginTop: 3 },
-  amountValueObjetivo: { color: '#ffffff', fontSize: 18, fontWeight: '900', marginTop: 3 },
-  progressTrack: { height: 10, backgroundColor: COLORS.inputBg, borderRadius: 5, overflow: 'hidden', marginVertical: 10 },
-  progressBar: { height: '100%', backgroundColor: COLORS.primary, borderRadius: 5 },
-  progressFooter: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 2 },
-  porcentajeText: { color: COLORS.primary, fontSize: 13, fontWeight: '800' },
-  restanteText: { color: '#cbd5e1', fontSize: 12, fontWeight: '600' },
-  metaCumplidaText: { color: COLORS.success, fontSize: 12, fontWeight: '700' },
-  btnAbonar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'rgba(16, 185, 129, 0.2)',
-    borderWidth: 1,
-    borderColor: COLORS.success,
-    paddingVertical: 12,
-    borderRadius: 14,
-    marginTop: 16,
-  },
-  btnAbonarDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderColor: 'rgba(255, 255, 255, 0.12)',
-  },
-  btnAbonarText: { color: '#ffffff', fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
-=======
   flatListContent: { paddingBottom: 90, paddingTop: 10 },
   cardOverride: { marginBottom: 12, padding: 16 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 },
@@ -508,7 +323,6 @@ const styles = StyleSheet.create({
   montoProgress: { color: COLORS.textPrimary, fontSize: 12, fontWeight: '700' },
   trackBar: { height: 8, backgroundColor: COLORS.inputBg, borderRadius: 4, overflow: 'hidden' },
   fillBar: { height: '100%', borderRadius: 4 },
->>>>>>> 8ffea35dd596669fe94cf2008540331139d57312
   centerContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 50 },
   emptyTitle: { color: COLORS.textSecondary, fontSize: 16, fontWeight: '700', marginTop: 12 },
   emptySubtext: { color: COLORS.textMuted, fontSize: 13, textAlign: 'center', marginTop: 4 },
