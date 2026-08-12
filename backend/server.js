@@ -1,5 +1,5 @@
 const { app, port } = require('./src/app');
-const conexion = require('./src/config/conexion'); // <-- ¡Asegúrate de tener esta línea!
+const conexion = require('./src/config/conexion');
 
 conexion.conect()
     .then(() => {

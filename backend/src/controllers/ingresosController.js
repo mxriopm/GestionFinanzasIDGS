@@ -29,7 +29,7 @@ function CrearIngreso(req, res) {
 
 function ObtenerIngresos(req, res) {
     modeloIngreso.find({ usuario: req.usuario.id })
-    .sort({ fecha: -1 }) // Ordenar del más reciente al más antiguo
+    .sort({ fecha: -1 }) 
     .then((ingresos) => {
         res.status(200).json({ ingresos });
     })
@@ -74,7 +74,6 @@ function modificarIngreso(req, res) {
     const consulta = { usuario: req.usuario.id };
     consulta[req.params.key] = req.params.value;
 
-    // Si intenta modificar el monto, se valida que sea positivo
     if (req.body.monto !== undefined) {
         if (isNaN(req.body.monto) || Number(req.body.monto) <= 0) {
             return res.status(400).json({ error: 'El monto debe ser un número mayor a 0' });

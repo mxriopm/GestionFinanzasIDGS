@@ -3,7 +3,6 @@ const jwt = require('jsonwebtoken');
 const modeloUsuario = require('../models/usuarioModel');
 const { jwtSecret } = require('../config/config');
 
-// RegEx para validar formato de correo electrónico
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function registrar(req, res) {

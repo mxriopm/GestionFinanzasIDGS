@@ -1,4 +1,3 @@
-// Solo carga dotenv si estamos en entorno local (desarrollo)
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }

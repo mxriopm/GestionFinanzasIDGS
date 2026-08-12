@@ -13,7 +13,7 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// 2. Control de CORS (maneja automáticamente las peticiones preflight sin romper Express)
+// 2. Control de CORS (maneja automáticamente las peticiones sin romper Express)
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],

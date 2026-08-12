@@ -9,7 +9,6 @@ async function CrearGasto(req, res) {
       return res.status(400).json({ error: 'El monto debe ser un número válido mayor a 0' });
     }
 
-    // Extracción ultra robusta adaptada al payload { id, correo } de tu login
     const usuarioId = req.usuario?.id || req.usuario?._id || req.user?.id || req.user?._id || (typeof req.usuario === 'string' ? req.usuario : null);
 
     if (!usuarioId) {
@@ -34,7 +33,6 @@ async function CrearGasto(req, res) {
 
 async function ObtenerGastos(req, res) {
   try {
-    // Extracción ultra robusta adaptada al payload { id, correo } de tu login
     const usuarioId = req.usuario?.id || req.usuario?._id || req.user?.id || req.user?._id || (typeof req.usuario === 'string' ? req.usuario : null);
 
     if (!usuarioId) {

@@ -80,7 +80,6 @@ function modificarPresupuesto(req, res) {
     });
 }
 
-// --- helpers ---
 
 function calcularAhorrado(presupuestoId) {
     return modeloAportacion.aggregate([
