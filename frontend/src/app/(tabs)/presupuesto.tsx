@@ -49,7 +49,6 @@ export default function PresupuestoScreen() {
     try {
       const res = await api.get('/presupuestos');
 
-      // ✅ Normalización y validación defensiva de respuesta
       const lista = Array.isArray(res.data)
         ? res.data
         : Array.isArray(res.data?.presupuestos)
@@ -147,18 +146,9 @@ export default function PresupuestoScreen() {
     }
   };
 
-  // ✅ REDUCE PROTEGIDO CON Array.isArray()
   const totalObjetivo = Array.isArray(presupuestos)
     ? presupuestos.reduce(
         (acc, curr) => acc + (Number(curr?.montoObjetivo) || 0),
-        0
-      )
-    : 0;
-
-  const totalAhorrado = Array.isArray(presupuestos)
-    ? presupuestos.reduce(
-        (acc, curr) =>
-          acc + (Number(curr?.montoAhorrado || curr?.montoGastado) || 0),
         0
       )
     : 0;

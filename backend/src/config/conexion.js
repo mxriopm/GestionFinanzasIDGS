@@ -9,7 +9,6 @@ module.exports = {
             
         }).then((connection) => {
             this.connection = connection;
-            console.log('Conexión a la base de datos establecida');
-        }).catch((error) => { console.log(error) });
+        }).catch((error) => { return Promise.reject(error); });
     }
 }

@@ -56,7 +56,6 @@ export default function IngresosScreen() {
     try {
       const res = await api.get('/ingresos');
       
-      // ✅ Normalización de respuesta API segura
       const listaIngresos = Array.isArray(res.data)
         ? res.data
         : Array.isArray(res.data?.ingresos)
@@ -79,7 +78,8 @@ export default function IngresosScreen() {
   }, [cargarIngresos]);
 
   const handleCrearIngreso = async () => {
-    const montoNum = parseFloat(monto);
+    const valorLimpio = monto.replace(',', '.').trim();
+    const montoNum = parseFloat(valorLimpio);
 
     if (isNaN(montoNum) || montoNum <= 0) {
       const msg = 'Ingresa un monto válido mayor a $0';
@@ -149,7 +149,6 @@ export default function IngresosScreen() {
     }
   };
 
-  // ✅ Reducción segura protegida con Array.isArray
   const totalIngresos = Array.isArray(ingresos)
     ? ingresos.reduce((acc, curr) => acc + (Number(curr?.monto) || 0), 0)
     : 0;
@@ -248,7 +247,6 @@ export default function IngresosScreen() {
           )}
         </View>
 
-        {/* Botón Flotante (+) */}
         <TouchableOpacity
           style={styles.fabButton}
           onPress={() => setModalVisible(true)}
@@ -257,7 +255,6 @@ export default function IngresosScreen() {
           <Ionicons name="add" size={32} color="#ffffff" />
         </TouchableOpacity>
 
-        {/* Modal de Registro */}
         <Modal
           visible={modalVisible}
           animationType="slide"

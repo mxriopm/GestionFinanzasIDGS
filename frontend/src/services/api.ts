@@ -2,19 +2,17 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// ⚠️ IP asignada a tu servidor backend
-const IP_COMPUTADORA = '192.168.1.92';
+// 🚀 URL pública HTTPS de Railway
+const RAILWAY_URL = 'https://gestionfinanzasidgs-production-5fdb.up.railway.app'; 
 
-const API_URL = Platform.OS === 'web' 
-  ? 'http://localhost:3000' 
-  : `http://${IP_COMPUTADORA}:3000`;
+const API_URL = RAILWAY_URL;
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000,
+  timeout: 15000,
 });
 
 // Interceptor de Solicitudes: Inyecta el JWT
@@ -32,7 +30,7 @@ api.interceptors.request.use(
         config.headers.Authorization = `Bearer ${token}`;
       }
     } catch (error) {
-      console.error('Error al recuperar el token de autenticación:', error);
+      // Error silencioso de lectura
     }
     return config;
   },
@@ -44,7 +42,6 @@ api.interceptors.response.use(
   (response) => response,
   async (error) => {
     if (error.response && error.response.status === 401) {
-      console.warn('Sesión expirada o token inválido. Limpiando almacenamiento local...');
       try {
         if (Platform.OS === 'web') {
           localStorage.removeItem('userToken');
@@ -52,7 +49,7 @@ api.interceptors.response.use(
           await SecureStore.deleteItemAsync('userToken');
         }
       } catch (cleanError) {
-        console.error('Error al limpiar el token expirado:', cleanError);
+        // Error silencioso de limpieza
       }
     }
     return Promise.reject(error);

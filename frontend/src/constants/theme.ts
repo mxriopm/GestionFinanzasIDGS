@@ -1,6 +1,23 @@
 import { StyleSheet } from 'react-native';
 
-export const COLORS = {
+export type ThemeColors = {
+  background: string;
+  cardBg: string;
+  cardBorder: string;
+  inputBg: string;
+  inputBorder: string;
+  primary: string;
+  success: string;
+  danger: string;
+  warning: string;
+  gold: string;
+  accent: string;
+  textPrimary: string;
+  textSecondary: string;
+  textMuted: string;
+};
+
+export const COLORS: ThemeColors = {
   // Fondos Sólidos Elegantes
   background: '#0b1120',         // Dark Slate profundo
   cardBg: '#151e32',             // Azul noche sólido para cero transparencias feas
@@ -12,6 +29,8 @@ export const COLORS = {
   primary: '#0ea5e9',      // Sky Cyan (Súper legible)
   success: '#10b981',      // Esmeralda (Ingresos)
   danger: '#f43f5e',       // Rosa/Rojo (Gastos)
+  warning: '#f59e0b',      // Ámbar (Advertencias)
+  gold: '#fbbf24',         // Dorado
   accent: '#6366f1',       // Indigo tenue
 
   // Tipografía de Alto Contraste
@@ -72,5 +91,23 @@ export const globalStyles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '800',
+  },
+  btnGold: {
+    backgroundColor: COLORS.gold,
+    paddingVertical: 16,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btnGoldText: {
+    color: '#05070e',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  titleGold: {
+    color: COLORS.gold,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
 });

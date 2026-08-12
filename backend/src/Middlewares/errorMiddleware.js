@@ -1,5 +1,4 @@
 const errorMiddleware = (err, req, res, next) => {
-  console.error('💥 Error detectado en el servidor:', err.stack || err.message);
 
   if (err.name === 'CastError') {
     return res.status(400).json({
