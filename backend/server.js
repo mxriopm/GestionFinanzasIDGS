@@ -1,10 +1,9 @@
-const { app, port } = require('./src/app');
-const conexion = require('./src/config/conexion');
+const PORT = process.env.PORT || 3000;
 
 conexion.conect()
     .then(() => {
-        app.listen(port, () => {
-            console.log(`Servidor corriendo en el puerto ${port}`);
+        app.listen(PORT, '0.0.0.0', () => {
+            console.log(`Servidor corriendo en el puerto ${PORT}`);
         });
     })
     .catch((error) => {

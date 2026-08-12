@@ -40,6 +40,10 @@ app.use('/gastos', rutaGastos);
 app.use('/presupuestos', rutaPresupuestos);
 app.use('/aportaciones', rutaAportaciones);
 
+app.get('/', (req, res) => {
+  res.json({ message: 'API Gestión Finanzas OK' });
+});
+
 // 6. Middleware global de manejo de errores
 app.use(errorMiddleware);
 
