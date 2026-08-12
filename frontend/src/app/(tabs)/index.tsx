@@ -90,7 +90,6 @@ export default function GastosDashboardScreen() {
   );
 
   const handleCrearGasto = async () => {
-    // Limpieza estricta del string a número
     const valorLimpio = montoText.replace(',', '.').trim();
     const montoNum = parseFloat(valorLimpio);
 
@@ -116,11 +115,9 @@ export default function GastosDashboardScreen() {
 
       const res = await api.post('/gastos', payload);
 
-      // Desestructuración segura del objeto respuesta
       let gastoCreado = res.data?.gasto || res.data;
 
       if (gastoCreado && typeof gastoCreado === 'object') {
-        // Garantizar propiedades por si el backend no las retorna explícitamente en el res.json
         gastoCreado = {
           ...gastoCreado,
           monto: gastoCreado.monto || montoNum,

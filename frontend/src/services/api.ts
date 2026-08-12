@@ -2,7 +2,6 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// URL fija a la nube (Render) para evitar problemas con la IP local
 const API_URL = 'https://gestionfinanzasidgs.onrender.com';
 
 const api = axios.create({
@@ -10,10 +9,9 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 15000, // Aumentado a 15s por si Render está "despertando"
+  timeout: 15000, 
 });
 
-// Interceptor de Solicitudes: Inyecta el JWT en la cabecera Bearer
 api.interceptors.request.use(
   async (config) => {
     let token: string | null = null;
@@ -34,7 +32,6 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor de Respuestas: Manejo de 401 y depuración de errores
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
