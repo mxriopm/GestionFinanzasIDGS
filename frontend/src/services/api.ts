@@ -2,12 +2,8 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// ⚠️ Dirección IP local asignada a tu servidor backend en Node.js
-const IP_COMPUTADORA = '192.168.137.12';
-
-const API_URL = Platform.OS === 'web' 
-  ? 'http://localhost:3000' 
-  : `http://${IP_COMPUTADORA}:3000`;
+// Enlace al backend desplegado en Railway
+const API_URL = 'https://gestionfinanzasidgs-production.up.railway.app';
 
 const api = axios.create({
   baseURL: API_URL,
