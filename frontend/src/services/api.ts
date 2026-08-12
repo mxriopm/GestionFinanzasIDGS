@@ -3,7 +3,8 @@ import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
 // Apunta directamente a tu backend desplegado en Railway
-const API_URL = 'https://gestionfinanzasidgs-production.up.railway.app';
+const API_URL = 'http://localhost:3000'; // usa esta para local
+// const API_URL = 'https://gestionfinanzasidgs-production.up.railway.app'; // usa esta para web
 
 const api = axios.create({
   baseURL: API_URL,
