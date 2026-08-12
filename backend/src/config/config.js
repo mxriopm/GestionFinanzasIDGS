@@ -10,6 +10,6 @@ module.exports = {
         process.env.MONGODB_URI ||
         process.env.MONGODB ||
         process.env.DATABASE_URL ||
-        'mongodb://localhost:27017/finanzasIDGS',
+        'mongodb://127.0.0.1:27017/finanzasIDGS',
     jwtSecret: process.env.JWT_SECRET || 'clave_secreta_cambiarla'
 };

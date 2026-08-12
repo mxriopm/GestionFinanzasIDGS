@@ -2,15 +2,16 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// Enlace al backend desplegado en Railway
-const API_URL = 'https://gestionfinanzasidgs-production.up.railway.app';
+const API_URL = Platform.OS === 'android'
+  ? 'http://10.0.2.2:3000'
+  : 'http://localhost:3000';
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 10000, // Timeout de seguridad a los 10 segundos
+  timeout: 10000,
 });
 
 // Interceptor de Solicitudes: Inyecta el JWT en la cabecera Bearer
