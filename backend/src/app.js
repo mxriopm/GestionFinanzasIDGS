@@ -13,17 +13,14 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 
-// 2. Control de CORS estricto para aceptar peticiones de cualquier origen (incluyendo Expo Web local)
-const corsOptions = {
+// 2. Control de CORS (maneja automáticamente las peticiones preflight sin romper Express)
+app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
   optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+}));
 
 // 3. Limitador de peticiones
 const limiter = rateLimit({
