@@ -2,7 +2,7 @@ import axios from 'axios';
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// Cambiado para que apunte directamente a tu backend desplegado en Railway
+// Apunta directamente a tu backend desplegado en Railway
 const API_URL = 'https://gestionfinanzasidgs-production.up.railway.app';
 
 const api = axios.create({
@@ -34,7 +34,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Interceptor de Respuestas: Manejo automático de tokens expirados (401)
+// Interceptor de Respuestas: Manejo de 401
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
