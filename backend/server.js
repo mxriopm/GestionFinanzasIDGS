@@ -4,11 +4,10 @@ const conexion = require('./src/config/conexion');
 conexion.conect()
     .then(() => {
         app.listen(port, () => {
-            console.log(`[SERVER] Escuchando en puerto ${port}`);
+            console.log(`Servidor corriendo en el puerto ${port}`);
         });
     })
     .catch((error) => {
-        console.error('[SERVER] No se pudo conectar a la DB, servidor detenido');
-        console.error(error);
+        console.error('[SERVER] No se pudo conectar a la DB:', error.message || error);
         process.exit(1);
     });

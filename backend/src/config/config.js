@@ -5,6 +5,11 @@ if (process.env.NODE_ENV !== 'production') {
 
 module.exports = {
     port: process.env.PORT || 3000,
-    db: process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/finanzasIDGS',
+    db:
+        process.env.MONGO_URI ||
+        process.env.MONGODB_URI ||
+        process.env.MONGODB ||
+        process.env.DATABASE_URL ||
+        'mongodb://localhost:27017/finanzasIDGS',
     jwtSecret: process.env.JWT_SECRET || 'clave_secreta_cambiarla'
 };
