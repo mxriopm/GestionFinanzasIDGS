@@ -7,20 +7,18 @@ const errorMiddleware = require('./Middlewares/errorMiddleware');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// 1. Cabeceras de seguridad HTTP (configurado para permitir CORS de forma segura)
+// 1. Cabeceras de seguridad HTTP
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
   crossOriginEmbedderPolicy: false
 }));
 
-// 2. Control de CORS explícito y manejo de preflight
+// 2. Control de CORS (maneja automáticamente los preflight OPTIONS de forma segura)
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
-
-app.options('*', cors());
 
 // 3. Limitador de peticiones
 const limiter = rateLimit({
